@@ -357,6 +357,25 @@ svg.i.s{width:16px;height:16px}
 .lib-title{display:flex;align-items:center;gap:9px}
 .lib-title img{border-radius:5px;display:block}
 
+/* ---------- board header + focus mode ---------- */
+.board-name{font-family:var(--f-hand);font-size:17px;color:var(--fg);background:var(--island);box-shadow:var(--island-shadow);border:0;border-radius:8px;height:38px;padding:0 12px;min-width:80px;max-width:min(420px,45vw);box-sizing:border-box;text-overflow:ellipsis}
+.board-name:hover{background:var(--hover)}
+.board-name:focus{outline:2px solid var(--accent);outline-offset:0;background:var(--island)}
+.island-btn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 12px 0 8px;border:0;border-radius:8px;background:var(--island);box-shadow:var(--island-shadow);cursor:pointer;color:var(--fg);font-size:13.5px;font-weight:600;max-width:260px;flex:none}
+.island-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.island-btn:hover{background:var(--hover)}
+.island-btn svg:first-child{margin-right:-4px}
+#focusBtn{width:38px;height:38px;background:var(--island);box-shadow:var(--island-shadow);border-radius:8px}
+#reader{transition:flex-basis .32s cubic-bezier(.2,.8,.2,1),opacity .2s}
+#app{transition:grid-template-columns .32s cubic-bezier(.2,.8,.2,1)}
+#app.focus{grid-template-columns:0 minmax(0,1fr)}
+#app.focus #lib{visibility:hidden;border:0}
+#app.focus #reader{flex-basis:0;min-width:0;opacity:0;pointer-events:none;overflow:hidden}
+#app.focus #split{display:none}
+#readFocus{margin-left:2px}
+@media (prefers-reduced-motion: reduce){ #reader,#app{transition:none} }
+@media (max-width:899px){ #focusBtn,#readFocus,#backToPdf{display:none} }
+
 /* ---------- narrow ---------- */
 @media (max-width:899px){
   #app,#app.lib-hidden{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"main" "tabs"}
@@ -393,6 +412,9 @@ svg.i.s{width:16px;height:16px}
   <symbol id="i-pointer" viewBox="0 0 24 24"><path d="M4.5 3.5l14.5 6.3-6.3 1.9-1.9 6.3z"/><path d="M13 13l5.5 5.5"/></symbol>
   <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 7V4.5h14V7M9.5 19.5h5M12 4.5v15"/></symbol>
   <symbol id="i-rect" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></symbol>
+  <symbol id="i-shrink" viewBox="0 0 24 24"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
   <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></symbol>
 </svg>
 
@@ -415,6 +437,7 @@ svg.i.s{width:16px;height:16px}
         <div id="docTitle" class="title">Sift</div>
         <div class="pager" id="pager" hidden><input id="pageIn" inputmode="numeric" aria-label="Page number" value=""><span id="pageTotal">/ 0</span></div>
         <div class="seg" id="zoomSeg" hidden role="group" aria-label="Page zoom"><button id="zOut" type="button" aria-label="Zoom out">−</button><button id="zFit" class="lbl" type="button" title="Fit to width">Fit</button><button id="zIn" type="button" aria-label="Zoom in">+</button></div>
+        <button id="readFocus" class="icon-btn" type="button" aria-label="Open the board full screen" title="Board full screen (F)"><svg class="i s"><use href="#i-expand"/></svg></button>
       </div>
       <div id="scroller">
         <div id="pages"></div>
@@ -434,7 +457,8 @@ svg.i.s{width:16px;height:16px}
 
     <section id="boardPane" aria-label="Board">
       <div class="vhead">
-        <select id="boardSel" aria-label="Board"></select>
+        <button id="backToPdf" hidden class="island-btn back" type="button" title="Back to the PDF (F)"><svg class="i s"><use href="#i-back"/></svg><svg class="i s"><use href="#i-pdf"/></svg><span id="backName">PDF</span></button>
+        <input id="boardName" class="board-name" type="text" aria-label="Board name" spellcheck="false" autocomplete="off">
         <span class="spacer"></span>
         <div id="tools" class="tools" role="toolbar" aria-label="Board tools">
           <button class="tool" data-tool="hand" type="button" title="Hand: drag to move around — H, or hold Space" aria-label="Hand tool"><svg class="i s"><use href="#i-hand"/></svg><kbd>H</kbd></button>
@@ -443,6 +467,7 @@ svg.i.s{width:16px;height:16px}
           <button class="tool" data-tool="group" type="button" title="Rectangle: drag to draw — R" aria-label="Rectangle tool"><svg class="i s"><use href="#i-rect"/></svg><kbd>R</kbd></button>
         </div>
         <span class="spacer"></span>
+        <button id="focusBtn" class="icon-btn island-icon" type="button" aria-label="Focus on the board" title="Focus on the board (F)"><svg class="i s"><use href="#i-expand"/></svg></button>
         <button id="boardMenuBtn" class="icon-btn" type="button" aria-label="Board options" title="Board options">⋯</button>
       </div>
       <div id="board">
@@ -499,8 +524,6 @@ svg.i.s{width:16px;height:16px}
 </div>
 
 <div id="boardMenu" class="pop" hidden role="dialog" aria-label="Board options">
-  <label for="bName">Board name</label>
-  <input id="bName" type="text">
   <button id="recallBtn" class="mi" type="button" aria-pressed="false">Recall mode: off</button>
   <div class="sep"></div>
   <button id="bDel" class="mi" type="button">Delete this board</button>
@@ -1012,6 +1035,7 @@ function deleteHighlight(h) {
 async function goToSource(h) {
   if (!S.haveFile.has(h.docId) && !memFiles.has(h.docId)) { toast(`Add "${docName(h)}" again to see where this came from.`); return; }
   const top = Math.min(...h.rects.map(r => r[1]));
+  setFocus(false);
   await openDoc(h.docId);
   if (NARROW()) setView('read');
   requestAnimationFrame(() => {
@@ -1045,16 +1069,38 @@ function seedBoard() {
 }
 function saveBoard(b = board()) { if (b) later('board' + b.id, () => { commitHistory(b); DB.put('boards', b); }, 350); }
 function renderBoardSel() {
-  const s = $('#boardSel'); s.textContent = '';
-  for (const b of S.boards) { const o = el('option', null, b.name); o.value = b.id; s.appendChild(o); }
-  s.hidden = S.boards.length < 2;
-  s.value = S.boardId;
+  const b = board(); const inp = $('#boardName');
+  if (b && document.activeElement !== inp) inp.value = b.name;
+  sizeBoardName();
 }
-$('#boardSel').addEventListener('change', e => {
-  const b = S.boards.find(x => x.id === e.target.value); if (!b) return;
-  if (b.docId && b.docId !== S.doc && (S.haveFile.has(b.docId) || memFiles.has(b.docId))) openDoc(b.docId);
-  else showBoard(b.id);
+function sizeBoardName() { const inp = $('#boardName'); inp.style.width = Math.min(420, Math.max(80, (inp.value.length + 2) * 9.5)) + 'px'; }
+$('#boardName').addEventListener('input', e => {
+  const b = board(); if (!b) return;
+  b.name = e.target.value.trim() || 'Untitled board'; sizeBoardName(); saveBoard();
 });
+$('#boardName').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); e.target.blur(); } });
+$('#boardName').addEventListener('blur', e => { if (!e.target.value.trim()) e.target.value = board().name; sizeBoardName(); });
+
+/* ---------- focus mode: the board takes the whole window ---------- */
+function setFocus(on, { fullscreen = true } = {}) {
+  if (NARROW()) { if (on) setView('board'); return; }
+  const app = $('#app'); if (app.classList.contains('focus') === on) return;
+  app.classList.toggle('focus', on);
+  $('#focusBtn').innerHTML = `<svg class="i s"><use href="#i-${on ? 'shrink' : 'expand'}"/></svg>`;
+  $('#focusBtn').title = on ? 'Back to the PDF (F)' : 'Focus on the board (F)';
+  $('#focusBtn').setAttribute('aria-label', on ? 'Back to the PDF' : 'Focus on the board');
+  const d = S.docs.find(x => x.id === S.doc);
+  $('#backName').textContent = d ? d.name : 'PDF';
+  $('#backToPdf').hidden = !on || !S.doc;
+  $('#selPop').hidden = true; hidePop($('#hlPop'));
+  try {
+    if (on && fullscreen && document.fullscreenEnabled && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+    if (!on && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  } catch (e) {}
+}
+$('#focusBtn').onclick = () => setFocus(!$('#app').classList.contains('focus'));
+$('#readFocus').onclick = () => setFocus(true);
+$('#backToPdf').onclick = () => setFocus(false);
 
 const TONE_INK = ['r', 'o', 'g', 'b', 'v'];
 function zoneEl(z) {
@@ -1248,6 +1294,12 @@ $('#cardBar').addEventListener('click', e => {
   saveBoard(); placeCardBar();
 });
 addEventListener('resize', () => placeCardBar());
+let boardBox = null;
+new ResizeObserver(() => {
+  const r = boardEl.getBoundingClientRect(); const b = board();
+  if (b && boardBox && r.width && boardBox.w) { b.view.x += (r.width - boardBox.w) / 2; b.view.y += (r.height - boardBox.h) / 2; applyView(); }
+  boardBox = r.width ? { w: r.width, h: r.height } : boardBox;
+}).observe(boardEl);
 function deleteSelection() {
   const b = board(); if (!S.sel.size) return;
   const ids = S.sel; let back = 0;
@@ -1553,6 +1605,7 @@ document.addEventListener('keydown', e => {
     if (!S.space) { S.space = true; boardEl.classList.add('space'); }
     return;
   }
+  if (k === 'f' && $('#selPop').hidden) { e.preventDefault(); setFocus(!$('#app').classList.contains('focus')); return; }
   if ($('#selPop').hidden && TOOL_KEYS[k]) { setTool(TOOL_KEYS[k]); return; }
   if (e.key === 'Delete' || e.key === 'Backspace') {
     if (S.selLink) { const b = board(); b.links = b.links.filter(l => l.id !== S.selLink); S.selLink = null; saveBoard(); drawLinks(); e.preventDefault(); }
@@ -1656,16 +1709,12 @@ function placeStrays() {
 $('#boardMenuBtn').onclick = e => {
   const m = $('#boardMenu');
   if (!m.hidden) { m.hidden = true; return; }
-  $('#bName').value = board().name;
   const del = $('#bDel'); del.classList.remove('confirm'); del.textContent = 'Delete this board';
   del.hidden = !!board().docId || S.boards.length < 2;
   const r = e.currentTarget.getBoundingClientRect();
   m.hidden = false; const mr = m.getBoundingClientRect();
   m.style.left = clamp(r.left, 8, innerWidth - mr.width - 8) + 'px'; m.style.top = (r.bottom + 6) + 'px';
-  $('#bName').focus(); $('#bName').select();
 };
-$('#bName').addEventListener('input', e => { const b = board(); b.name = e.target.value || 'Untitled board'; saveBoard(); renderBoardSel(); });
-$('#bName').addEventListener('keydown', e => { if (e.key === 'Enter') $('#boardMenu').hidden = true; });
 $('#bDel').onclick = e => twoStep(e.currentTarget, 'Yes, delete it', () => {
   const b = board(); S.boards = S.boards.filter(x => x.id !== b.id); DB.del('boards', b.id);
   S.boardId = (S.boards.find(x => x.docId === S.doc) || S.boards[0]).id; LS.set('board', S.boardId); $('#boardMenu').hidden = true;
