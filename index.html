@@ -401,7 +401,7 @@ svg.i.s{width:16px;height:16px}
         <div id="pages"></div>
         <div id="readerEmpty">
           <h1>Read, highlight, sort.</h1>
-          <p>Highlights become cards you group by hand on the board.</p>
+          <p>Every highlight lands on the board, ready for you to arrange.</p>
           <div class="em-actions">
             <button id="emSample" class="btn primary" type="button">Try a sample PDF</button>
             <label class="btn" for="fileIn" tabindex="0">Open your own</label>
@@ -414,7 +414,6 @@ svg.i.s{width:16px;height:16px}
 
     <section id="boardPane" aria-label="Board">
       <div class="vhead">
-        <button id="trayToggle" class="btn ghost" type="button" aria-pressed="false"><svg class="i s"><use href="#i-inbox"/></svg>Tray <span id="trayCount" class="pill">0</span></button>
         <select id="boardSel" aria-label="Board"></select>
         <span class="spacer"></span>
         <div id="tools" class="tools" role="toolbar" aria-label="Board tools">
@@ -432,13 +431,6 @@ svg.i.s{width:16px;height:16px}
           <button id="bIn" type="button" aria-label="Zoom in">+</button>
           <button id="bFit" class="lbl" type="button" title="Fit everything">100%</button>
           <button id="bOut" type="button" aria-label="Zoom out">−</button>
-        </div>
-        <div id="tray" hidden>
-          <div class="tray-head">
-            <div class="tray-row"><input id="traySearch" type="search" placeholder="Search highlights" aria-label="Search highlights"><button id="trayClose" class="icon-btn" type="button" aria-label="Close tray">×</button></div>
-            <div class="tray-row"><select id="trayDoc" aria-label="Filter by PDF"></select><label class="chk"><input type="checkbox" id="trayPlaced"> Show placed</label></div>
-          </div>
-          <div id="trayList"></div>
         </div>
         <div id="boardHint"></div>
       </div>
@@ -943,8 +935,9 @@ function createHighlight(color) {
   const h = { id: uid(), docId: S.doc, docName: (S.docs.find(d => d.id === S.doc) || {}).name || '', page: n, rects, text, color, note: '', created: Date.now() };
   S.hls.push(h); DB.put('hls', h);
   getSelection().removeAllRanges(); S.pendingRange = null;
-  drawHL(pEl, n); renderTray(); renderLibrary();
-  toast('Highlighted. It\'s waiting in the tray.', 2200);
+  drawHL(pEl, n); renderLibrary();
+  const card = autoPlace(h); saveBoard(); renderBoard();
+  requestAnimationFrame(() => flash(world.querySelector(`.card[data-id="${card.id}"]`)));
 }
 scroller.addEventListener('click', e => {
   const sel = getSelection(); if (sel && !sel.isCollapsed) return;
@@ -1077,13 +1070,14 @@ function cardEl(c) {
   else m.appendChild(el('span', 'lbl', c.src || 'Note'));
   const hd = el('button', 'handle'); hd.type = 'button'; hd.title = 'Drag onto another card to connect them'; hd.setAttribute('aria-label', 'Connect to another card');
   const rm = el('button', 'crm icon-btn', '×'); rm.type = 'button';
-  rm.setAttribute('aria-label', h ? 'Send back to tray' : 'Delete note'); rm.title = h ? 'Send back to tray' : 'Delete note';
+  rm.setAttribute('aria-label', h ? 'Remove from board' : 'Delete note'); rm.title = h ? 'Remove from board' : 'Delete note';
   m.append(hd, rm); e.appendChild(m);
   return e;
 }
 function renderBoard() {
   const b = board(); if (!b) return;
   migrateGroups(b);
+  placeStrays();
   hist(b);
   $$('.zone,.card', world).forEach(x => x.remove());
   b.cards = b.cards.filter(c => !c.hl || hlById(c.hl));
@@ -1146,7 +1140,7 @@ function saveView() { later('view', () => saveBoard(), 500); }
 function toWorld(cx, cy) { const r = boardEl.getBoundingClientRect(); const v = board().view; return [(cx - r.left - v.x) / v.z, (cy - r.top - v.y) / v.z]; }
 function visibleCenter() {
   const r = boardEl.getBoundingClientRect();
-  const trayW = !$('#tray').hidden && !NARROW() ? $('#tray').offsetWidth : 0;
+  const trayW = 0;
   return toWorld(r.left + trayW + (r.width - trayW) / 2, r.top + r.height / 2);
 }
 function zoomBy(f, cx, cy) {
@@ -1167,7 +1161,7 @@ function fitBoard() {
   const x0 = Math.min(...items.map(i => i[0])), y0 = Math.min(...items.map(i => i[1]));
   const x1 = Math.max(...items.map(i => i[2])), y1 = Math.max(...items.map(i => i[3]));
   const r = boardEl.getBoundingClientRect();
-  const trayW = !$('#tray').hidden && !NARROW() ? $('#tray').offsetWidth : 0;
+  const trayW = 0;
   const W = r.width - trayW - 60, H = r.height - 60 - 56;
   const z = clamp(Math.min(W / (x1 - x0), H / (y1 - y0)), 0.2, 1.2);
   b.view = { z, x: trayW + 30 + (W - (x1 - x0) * z) / 2 - x0 * z, y: 86 + (H - (y1 - y0) * z) / 2 - y0 * z };
@@ -1175,7 +1169,7 @@ function fitBoard() {
 }
 function centerOn(c) {
   const v = board().view; const r = boardEl.getBoundingClientRect(); const s = cardSize(c.id);
-  const trayW = !$('#tray').hidden && !NARROW() ? $('#tray').offsetWidth : 0;
+  const trayW = 0;
   v.x = trayW + (r.width - trayW) / 2 - (c.x + s.w / 2) * v.z; v.y = r.height / 2 - (c.y + s.h / 2) * v.z;
   applyView(); saveView();
 }
@@ -1234,14 +1228,14 @@ function deleteSelection() {
   b.zones = b.zones.filter(z => !ids.has(z.id));
   b.links = b.links.filter(l => !ids.has(l.a) && !ids.has(l.b));
   S.sel = new Set(); saveBoard(); renderBoard(); renderTray();
-  toast(back ? `Removed. ${back} highlight${back === 1 ? ' is' : 's are'} back in the tray. Ctrl+Z to undo.` : 'Removed. Ctrl+Z to undo.', 2400);
+  toast(back ? 'Removed from the board. Highlights stay in the PDF. Ctrl+Z to undo.' : 'Removed. Ctrl+Z to undo.', 2400);
 }
 function removeCard(id) {
   const b = board(); const c = b.cards.find(c => c.id === id); if (!c) return;
   b.cards = b.cards.filter(x => x.id !== id); b.links = b.links.filter(l => l.a !== id && l.b !== id);
   S.sel.delete(id);
   saveBoard(); renderBoard(); renderTray();
-  if (c.hl) toast('Back in the tray.', 1800);
+  if (c.hl) toast('Removed from the board. The highlight stays in the PDF.', 2200);
 }
 function addCard(card) {
   const b = board(); b.cards.push(card); saveBoard(); renderBoard(); renderTray();
@@ -1271,10 +1265,10 @@ function showOnBoard(hid) {
   if (NARROW()) setView('board');
   const b = board(); const c = b.cards.find(c => c.hl === hid);
   if (c) { requestAnimationFrame(() => { centerOn(c); selectCard(c.id); flash(world.querySelector(`.card[data-id="${c.id}"]`)); }); return; }
-  openTray(true);
-  $('#traySearch').value = ''; $('#trayDoc').value = ''; renderTray();
-  requestAnimationFrame(() => { const it = $(`.titem[data-id="${hid}"]`); if (it) { it.scrollIntoView({ block: 'center' }); flash(it); } });
-  toast('Not on this board yet. It\'s in the tray.', 2400);
+  const h = hlById(hid); if (!h) return;
+  const [cx, cy] = visibleCenter();
+  const nc = addCard({ id: uid(), hl: hid, x: Math.round(cx - CARD_W / 2), y: Math.round(cy - 30) });
+  requestAnimationFrame(() => selectCard(nc.id));
 }
 $('#recallBtn').onclick = e => {
   S.recall = !S.recall; e.currentTarget.setAttribute('aria-pressed', S.recall);
@@ -1284,7 +1278,7 @@ $('#recallBtn').onclick = e => {
 function updateHint() {
   const b = board();
   $('#boardHint').textContent = b.cards.length || b.zones.length ? ''
-    : 'Open the tray and drag highlights here. Double-click anywhere for a note.';
+    : 'Highlight text in a PDF and it lands here. Double-click anywhere for a note.';
   $('#boardHint').hidden = !$('#boardHint').textContent;
 }
 
@@ -1328,7 +1322,7 @@ function startMove(e) {
 boardEl.addEventListener('pointerenter', () => { S.overBoard = true; });
 boardEl.addEventListener('pointerleave', () => { S.overBoard = false; });
 boardEl.addEventListener('pointerdown', e => {
-  if (e.target.closest('#tray,.canvas-ctl')) return;
+  if (e.target.closest('.canvas-ctl')) return;
   hidePop($('#boardMenu'));
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
   const v = board().view;
@@ -1497,11 +1491,10 @@ boardEl.addEventListener('click', e => {
 boardEl.addEventListener('dblclick', e => {
   const ce = e.target.closest('.card');
   if (ce && S.tool !== 'hand' && ce.querySelector('.note-text')) { setSel([ce.dataset.id]); editNote(ce.dataset.id); return; }
-  if (S.tool === 'hand' || e.target.closest('.card,#tray,.canvas-ctl,.edge,button,input,textarea')) return;
+  if (S.tool === 'hand' || e.target.closest('.card,.canvas-ctl,.edge,button,input,textarea')) return;
   const [wx, wy] = toWorld(e.clientX, e.clientY); addNoteAt(wx, wy);
 });
 boardEl.addEventListener('wheel', e => {
-  if (e.target.closest('#tray')) return;
   if (e.target.closest('textarea') && !e.ctrlKey) return;
   e.preventDefault();
   if (e.ctrlKey || e.metaKey) zoomBy(Math.exp(-e.deltaY * 0.0022), e.clientX, e.clientY);
@@ -1551,94 +1544,51 @@ document.addEventListener('keydown', e => {
 document.addEventListener('keyup', e => { if (e.key === ' ' && S.space) { S.space = false; boardEl.classList.remove('space'); } });
 addEventListener('blur', () => { S.space = false; boardEl.classList.remove('space'); });
 
-/* ---------- tray ---------- */
-function openTray(open) {
-  const t = $('#tray'); t.hidden = !open;
-  $('#trayToggle').setAttribute('aria-pressed', open);
-  if (open) renderTray();
+/* ---------- highlights flow onto the board ---------- */
+function renderTray() {}
+function renderTrayDocs() {}
+function overlaps(x, y, w, h, b, skipId) {
+  return b.cards.some(c => {
+    if (c.id === skipId) return false;
+    const s = cardSize(c.id);
+    return x < c.x + s.w + 14 && x + w + 14 > c.x && y < c.y + s.h + 14 && y + h + 14 > c.y;
+  });
 }
-$('#trayToggle').onclick = () => openTray($('#tray').hidden);
-$('#trayClose').onclick = () => openTray(false);
-function renderTrayDocs() {
-  const s = $('#trayDoc'); const cur = s.value; s.textContent = '';
-  const o = el('option', null, 'All PDFs'); o.value = ''; s.appendChild(o);
-  const names = new Map();
-  for (const d of S.docs) names.set(d.id, d.name);
-  for (const h of S.hls) if (!names.has(h.docId)) names.set(h.docId, h.docName || 'Untitled');
-  for (const [id, n] of names) { const x = el('option', null, n); x.value = id; s.appendChild(x); }
-  s.value = names.has(cur) ? cur : '';
+/* Each new highlight lands next to the previous one, in loose rows, with a little jitter. */
+function autoPlace(h, b = board()) {
+  const jitter = n => Math.round((Math.random() - 0.5) * n);
+  const COL = CARD_W + 34, PER_ROW = 3;
+  let f = b.flow;
+  if (!f) {
+    const items = b.cards.map(c => { const s = cardSize(c.id); return [c.x, c.y + s.h]; }).concat(b.zones.map(z => [z.x, z.y + z.h]));
+    if (items.length) f = { x0: Math.min(...items.map(i => i[0])), y: Math.max(...items.map(i => i[1])) + 70 };
+    else { const [cx, cy] = boardEl.offsetParent ? visibleCenter() : [400, 300]; f = { x0: Math.round(cx - COL * 1.5), y: Math.round(cy - 120) }; }
+    f = b.flow = { ...f, i: 0, rowH: 0 };
+  }
+  const col = f.i % PER_ROW;
+  let x = f.x0 + col * COL + jitter(28), y = f.y + jitter(22);
+  const estH = Math.min(220, 40 + Math.ceil(h.text.length / 26) * 24);
+  let tries = 0;
+  while (overlaps(x, y, CARD_W, estH, b) && tries++ < 60) y += 28;
+  const card = { id: uid(), hl: h.id, x, y };
+  b.cards.push(card);
+  f.rowH = Math.max(f.rowH, y - f.y + estH);
+  f.i++;
+  if (f.i % PER_ROW === 0) { f.y += f.rowH + 30; f.rowH = 0; }
+  h.placedOnce = true; DB.put('hls', h);
+  return card;
 }
-function renderTray() {
+/* Earlier versions kept highlights in a tray; put any that never reached a board onto this one. */
+function placeStrays() {
   const b = board(); if (!b) return;
-  const placed = new Set(b.cards.filter(c => c.hl).map(c => c.hl));
-  const waiting = S.hls.filter(h => !placed.has(h.id)).length;
-  $('#trayCount').textContent = waiting;
-  if ($('#tray').hidden) return;
-  const q = $('#traySearch').value.trim().toLowerCase(), docF = $('#trayDoc').value, incl = $('#trayPlaced').checked;
-  const list = S.hls.filter(h => (incl || !placed.has(h.id)) && (!docF || h.docId === docF) &&
-    (!q || h.text.toLowerCase().includes(q) || (h.note || '').toLowerCase().includes(q))).sort((a, b2) => b2.created - a.created);
-  const box = $('#trayList'); box.textContent = '';
-  if (!S.hls.length) { box.appendChild(el('p', 'tray-empty', 'Highlights you make while reading land here. Select text in a PDF and pick a color to make your first one.')); return; }
-  if (!list.length) { box.appendChild(el('p', 'tray-empty', q || docF ? 'Nothing matches this search.' : 'Every highlight is already on this board. Nicely sorted.')); return; }
-  for (const h of list.slice(0, S.trayLimit)) {
-    const it = el('div', 'titem' + (placed.has(h.id) ? ' placed' : '')); it.dataset.id = h.id; it.dataset.color = h.color;
-    it.appendChild(el('div', 't-text', h.text));
-    const m = el('div', 't-meta'); m.appendChild(el('span', 'lbl', `${docName(h)} · p. ${h.page}`));
-    const src = el('button', 't-src', 'Source'); src.type = 'button';
-    const pl = el('button', 't-place', placed.has(h.id) ? 'Find' : 'Place'); pl.type = 'button';
-    m.append(src, pl); it.appendChild(m); box.appendChild(it);
+  const onBoards = new Set(S.boards.flatMap(x => x.cards.filter(c => c.hl).map(c => c.hl)));
+  let n = 0;
+  for (const h of [...S.hls].sort((a, c) => a.created - c.created)) {
+    if (onBoards.has(h.id)) { if (!h.placedOnce) { h.placedOnce = true; DB.put('hls', h); } continue; }
+    if (h.placedOnce) continue;
+    autoPlace(h, b); n++;
   }
-  if (list.length > S.trayLimit) {
-    const more = el('button', 'btn ghost', `Show ${Math.min(150, list.length - S.trayLimit)} more`); more.type = 'button';
-    more.onclick = () => { S.trayLimit += 150; renderTray(); }; box.appendChild(more);
-  }
-}
-['input', 'change'].forEach(ev => {
-  $('#traySearch').addEventListener(ev, () => { S.trayLimit = 150; renderTray(); });
-});
-$('#trayDoc').addEventListener('change', () => { S.trayLimit = 150; renderTray(); });
-$('#trayPlaced').addEventListener('change', renderTray);
-$('#trayList').addEventListener('click', e => {
-  const it = e.target.closest('.titem'); if (!it) return; const h = hlById(it.dataset.id); if (!h) return;
-  if (e.target.closest('.t-src')) goToSource(h);
-  else if (e.target.closest('.t-place')) {
-    const c = board().cards.find(c => c.hl === h.id);
-    if (c) { centerOn(c); selectCard(c.id); flash(world.querySelector(`.card[data-id="${c.id}"]`)); return; }
-    const [cx, cy] = visibleCenter(); const n = board().cards.length % 6;
-    placeHighlight(h.id, cx + n * 18, cy + n * 18);
-    if (NARROW()) openTray(false);
-  }
-});
-let tdrag = null;
-$('#trayList').addEventListener('pointerdown', e => {
-  if (e.pointerType === 'touch' || e.button !== 0) return;
-  const it = e.target.closest('.titem'); if (!it || e.target.closest('button')) return;
-  tdrag = { id: it.dataset.id, sx: e.clientX, sy: e.clientY, ghost: null, src: it };
-  e.preventDefault();
-  addEventListener('pointermove', trayMove); addEventListener('pointerup', trayUp, { once: true });
-});
-function trayMove(e) {
-  if (!tdrag) return;
-  if (!tdrag.ghost) {
-    if (Math.hypot(e.clientX - tdrag.sx, e.clientY - tdrag.sy) < 6) return;
-    const h = hlById(tdrag.id); const g = el('div', 'card ghost-card'); g.dataset.color = h.color;
-    g.appendChild(el('div', 'card-text', h.text)); document.body.appendChild(g); tdrag.ghost = g;
-  }
-  tdrag.ghost.style.left = (e.clientX - 110) + 'px'; tdrag.ghost.style.top = (e.clientY - 24) + 'px';
-}
-function trayUp(e) {
-  removeEventListener('pointermove', trayMove);
-  const d = tdrag; tdrag = null; if (!d || !d.ghost) return;
-  d.ghost.remove();
-  const br = boardEl.getBoundingClientRect(), tr = $('#tray').getBoundingClientRect();
-  const inBoard = e.clientX >= br.left && e.clientX <= br.right && e.clientY >= br.top && e.clientY <= br.bottom;
-  const inTray = e.clientX <= tr.right && e.clientX >= tr.left && e.clientY >= tr.top && e.clientY <= tr.bottom;
-  if (inBoard && !inTray) {
-    const existing = board().cards.find(c => c.hl === d.id);
-    const [wx, wy] = toWorld(e.clientX, e.clientY);
-    if (existing) { existing.x = Math.round(wx - CARD_W / 2); existing.y = Math.round(wy - 40); saveBoard(); renderBoard(); renderTray(); }
-    else placeHighlight(d.id, wx, wy);
-  }
+  if (n) DB.put('boards', b);
 }
 
 /* ---------- board menu ---------- */
@@ -1663,7 +1613,7 @@ $('#bNew').onclick = () => {
 $('#bDel').onclick = e => twoStep(e.currentTarget, 'Yes, delete it', () => {
   const b = board(); S.boards = S.boards.filter(x => x.id !== b.id); DB.del('boards', b.id);
   S.boardId = S.boards[0].id; LS.set('board', S.boardId); $('#boardMenu').hidden = true;
-  renderBoardSel(); renderBoard(); renderTray(); toast('Board deleted. Its highlights are back in the tray.');
+  renderBoardSel(); renderBoard(); renderTray(); toast('Board deleted. Your highlights are still in the PDFs.');
 });
 document.addEventListener('pointerdown', e => {
   if (!e.target.closest('#boardMenu,#boardMenuBtn')) $('#boardMenu').hidden = true;
