@@ -415,6 +415,20 @@ svg.i.s{width:16px;height:16px}
 /* ---------- cards always show their whole text ---------- */
 .card-text,.card.sel .card-text{display:block;-webkit-line-clamp:unset;overflow:visible}
 
+/* ---------- reader: contents and find ---------- */
+.find-bar{display:flex;align-items:center;gap:4px;margin:0 12px 8px;padding:4px 6px 4px 10px;background:var(--island);border-radius:9px;box-shadow:var(--island-shadow);flex:none;color:var(--muted)}
+.find-bar input{flex:1;min-width:60px;border:0;background:transparent;font-size:14px;padding:6px 4px;color:var(--fg)}
+.find-bar input:focus{outline:none}
+.find-count{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums;padding:0 6px}
+.find-bar .icon-btn{width:30px;height:30px;font-size:15px}
+.textLayer span.find-hit{background:rgba(255,196,0,.38);border-radius:2px}
+.textLayer span.find-cur{background:rgba(240,120,0,.55);box-shadow:0 0 0 2px rgba(240,120,0,.55)}
+.toc-pop{width:320px;max-height:min(70vh,560px);overflow:auto;padding:6px}
+.toc-item{display:flex;align-items:baseline;gap:10px;width:100%;text-align:left;border:0;background:transparent;border-radius:7px;padding:6px 10px;cursor:pointer;font-size:13.5px;color:var(--fg);line-height:1.35}
+.toc-item:hover{background:var(--hover)}
+.toc-item.on{background:var(--accent-soft)}
+.toc-pg{margin-left:auto;font-size:11.5px;color:var(--faint);font-variant-numeric:tabular-nums;flex:none}
+
 /* ---------- narrow ---------- */
 @media (max-width:899px){
   #app,#app.lib-hidden{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"main" "tabs"}
@@ -454,6 +468,8 @@ svg.i.s{width:16px;height:16px}
   <symbol id="i-expand" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></symbol>
   <symbol id="i-shrink" viewBox="0 0 24 24"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5 16 16"/></symbol>
   <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></symbol>
 </svg>
 
@@ -477,8 +493,18 @@ svg.i.s{width:16px;height:16px}
         <img class="brand" src="favicon.svg" alt="" width="22" height="22">
         <input id="docTitle" class="title" type="text" value="Sift" readonly aria-label="PDF name" spellcheck="false" autocomplete="off">
         <button id="bkChip" class="bk-chip" type="button" data-tone="off"><span class="dot" aria-hidden="true"></span><span id="bkChipText">Turn on backup</span></button>
+        <button id="tocBtn" class="icon-btn" type="button" hidden title="Contents" aria-label="Contents"><svg class="i s"><use href="#i-list"/></svg></button>
+        <button id="findBtn" class="icon-btn" type="button" hidden title="Find in this PDF (Ctrl+F)" aria-label="Find in this PDF"><svg class="i s"><use href="#i-search"/></svg></button>
         <div class="pager" id="pager" hidden><input id="pageIn" inputmode="numeric" aria-label="Page number" value=""><span id="pageTotal">/ 0</span></div>
         <div class="seg" id="zoomSeg" hidden role="group" aria-label="Page zoom"><button id="zOut" type="button" aria-label="Zoom out">−</button><button id="zFit" class="lbl" type="button" title="Fit to width">Fit</button><button id="zIn" type="button" aria-label="Zoom in">+</button></div>
+      </div>
+      <div id="findBar" class="find-bar" hidden role="search">
+        <svg class="i s" aria-hidden="true"><use href="#i-search"/></svg>
+        <input id="findIn" type="text" placeholder="Find in this PDF" aria-label="Find in this PDF" autocomplete="off" spellcheck="false">
+        <span id="findCount" class="find-count" aria-live="polite"></span>
+        <button id="findPrev" class="icon-btn" type="button" title="Previous (Shift+Enter)" aria-label="Previous result">↑</button>
+        <button id="findNext" class="icon-btn" type="button" title="Next (Enter)" aria-label="Next result">↓</button>
+        <button id="findClose" class="icon-btn" type="button" title="Close (Esc)" aria-label="Close search">×</button>
       </div>
       <div id="scroller">
         <div id="pages"></div>
@@ -564,6 +590,8 @@ svg.i.s{width:16px;height:16px}
   <button class="ink" data-ink="b" type="button" aria-label="Blue" title="Blue"></button>
   <button class="ink" data-ink="v" type="button" aria-label="Violet" title="Violet"></button>
 </div>
+
+<div id="tocPop" class="pop toc-pop" hidden role="dialog" aria-label="Contents"><div id="tocList"></div></div>
 
 <div id="boardMenu" class="pop" hidden role="dialog" aria-label="Board options">
   <button id="recallBtn" class="mi" type="button" aria-pressed="false">Recall mode: off</button>
@@ -828,7 +856,8 @@ function closeDoc() {
   S.pdf = null; S.doc = null; io && io.disconnect(); rendered.clear();
   pagesEl.textContent = ''; $('#readerEmpty').hidden = false;
   $('#docTitle').value = 'Sift'; $('#docTitle').readOnly = true; $('#pageTotal').textContent = '/ 0'; $('#pageIn').value = '';
-  $('#pager').hidden = true; $('#zoomSeg').hidden = true;
+  $('#pager').hidden = true; $('#zoomSeg').hidden = true; $('#findBtn').hidden = true; $('#tocBtn').hidden = true;
+  closeFind(); FIND.texts = new Map();
   LS.set('doc', null);
 }
 async function openDoc(id, page) {
@@ -844,8 +873,11 @@ async function openDoc(id, page) {
   catch (e) { toast(e && e.message === 'reader-unavailable' ? 'The PDF engine could not load. Check your connection and reload.' : 'Couldn\'t open this PDF.'); return; }
   if (prevPdf) { try { prevPdf.destroy(); } catch (e) {} }
   S.pdf = pdf; S.doc = id; S.sizes = {};
-  $('#pager').hidden = false; $('#zoomSeg').hidden = false;
+  $('#pager').hidden = false; $('#zoomSeg').hidden = false; $('#findBtn').hidden = false;
   const d = S.docs.find(d => d.id === id);
+  S.zoom = (d && d.zoom) || 1;
+  FIND.texts = new Map(); if (!$('#findBar').hidden) closeFind();
+  loadOutline(pdf);
   const p1 = await pdf.getPage(1); const vp = p1.getViewport({ scale: 1 });
   S.base = { w: vp.width, h: vp.height };
   $('#readerEmpty').hidden = true;
@@ -912,6 +944,7 @@ async function renderPage(pageEl, n) {
     await token.text.promise;
     tl.appendChild(el('div', 'endOfContent'));
     pageEl.classList.add('ready');
+    markFind(pageEl, n);
   } catch (e) {
     if (!token.cancel && !(e && e.name === 'RenderingCancelledException')) console.warn('page', n, e);
   }
@@ -957,7 +990,7 @@ function setZoom(z) {
   if (!S.pdf) return;
   const n = currentPage(); const p = pageEl(n);
   const frac = p ? (scroller.scrollTop + 22 - p.offsetTop) / p.offsetHeight : 0;
-  S.zoom = clamp(z, 0.4, 3); computeScale(); buildShells();
+  S.zoom = clamp(z, 0.4, 3); computeScale(); buildShells(); rememberZoom();
   requestAnimationFrame(() => scrollToPage(n, frac));
 }
 $('#zIn').onclick = () => setZoom(S.zoom * 1.15);
@@ -969,6 +1002,192 @@ new ResizeObserver(() => {
   if (S.pdf && Math.abs(w - lastW) > 30) later('rescale', () => { lastW = scroller.clientWidth; setZoom(S.zoom); }, 220);
   if (!lastW) lastW = w;
 }).observe(scroller);
+
+/* ---------- zoom: Ctrl + scroll or pinch zooms the PDF, and each PDF remembers its zoom ---------- */
+let wheelZoom = null;
+scroller.addEventListener('wheel', e => {
+  if (!(e.ctrlKey || e.metaKey) || !S.pdf) return;
+  e.preventDefault();
+  const f = Math.exp(-e.deltaY * 0.0025);
+  wheelZoom = (wheelZoom || S.zoom) * f;
+  wheelZoom = clamp(wheelZoom, 0.4, 3);
+  $('#zFit').textContent = Math.round(wheelZoom * 100) + '%';
+  pagesEl.style.transformOrigin = `50% ${scroller.scrollTop + (e.clientY - scroller.getBoundingClientRect().top)}px`;
+  pagesEl.style.transform = `scale(${wheelZoom / S.zoom})`;
+  later('wheelzoom', () => { const z = wheelZoom; wheelZoom = null; pagesEl.style.transform = ''; setZoom(z); }, 180);
+}, { passive: false });
+function rememberZoom() {
+  const d = S.docs.find(x => x.id === S.doc); if (!d) return;
+  d.zoom = S.zoom; DB.req('docs', 'readwrite', st => st.put(d));
+}
+
+/* ---------- contents (the PDF's own outline) ---------- */
+S.outline = null;
+async function loadOutline(pdf) {
+  S.outline = null; $('#tocBtn').hidden = true;
+  let items;
+  try { items = await pdf.getOutline(); } catch (e) { return; }
+  if (pdf !== S.pdf || !items || !items.length) return;
+  const resolve = async dest => {
+    try {
+      const d = typeof dest === 'string' ? await pdf.getDestination(dest) : dest;
+      if (!Array.isArray(d) || !d[0]) return null;
+      return typeof d[0] === 'number' ? d[0] + 1 : (await pdf.getPageIndex(d[0])) + 1;
+    } catch (e) { return null; }
+  };
+  const walk = async (list, depth, out) => {
+    for (const it of list) {
+      if (out.length > 600) break;
+      out.push({ title: (it.title || '').trim() || 'Untitled', depth, page: it.dest ? await resolve(it.dest) : null });
+      if (it.items && it.items.length && depth < 3) await walk(it.items, depth + 1, out);
+    }
+    return out;
+  };
+  const flat = await walk(items, 0, []);
+  if (pdf !== S.pdf) return;
+  S.outline = flat.filter(x => x.page);
+  $('#tocBtn').hidden = !S.outline.length;
+}
+function openToc() {
+  const pop = $('#tocPop');
+  if (!pop.hidden) { pop.hidden = true; return; }
+  const list = $('#tocList'); list.textContent = '';
+  const cur = currentPage();
+  let active = null;
+  for (const it of S.outline || []) {
+    const b = el('button', 'toc-item', it.title); b.type = 'button';
+    b.style.paddingLeft = (10 + it.depth * 14) + 'px';
+    b.dataset.page = it.page;
+    b.appendChild(el('span', 'toc-pg', String(it.page)));
+    if (it.page <= cur) active = b;
+    list.appendChild(b);
+  }
+  if (active) active.classList.add('on');
+  const r = $('#tocBtn').getBoundingClientRect();
+  pop.hidden = false;
+  pop.style.left = clamp(r.left - 8, 8, innerWidth - pop.offsetWidth - 8) + 'px';
+  pop.style.top = (r.bottom + 6) + 'px';
+  if (active) active.scrollIntoView({ block: 'center' });
+}
+$('#tocBtn').onclick = openToc;
+$('#tocList').addEventListener('click', e => {
+  const b = e.target.closest('.toc-item'); if (!b) return;
+  $('#tocPop').hidden = true; scrollToPage(+b.dataset.page);
+});
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#tocPop,#tocBtn')) $('#tocPop').hidden = true; });
+
+/* ---------- find in the PDF ---------- */
+const FIND = { q: '', hits: [], cur: -1, texts: new Map(), token: 0 };
+async function pageText(pdf, n) {
+  const key = n;
+  if (FIND.texts.has(key)) return FIND.texts.get(key);
+  const page = await pdf.getPage(n);
+  const tc = await page.getTextContent();
+  const items = tc.items.filter(it => 'str' in it);
+  let text = '', starts = [];
+  for (const it of items) { starts.push(text.length); text += it.str; if (it.hasEOL) text += ' '; }
+  const rec = { text: text.toLowerCase(), starts, lens: items.map(it => it.str.length), raw: text };
+  FIND.texts.set(key, rec);
+  return rec;
+}
+function openFind() {
+  if (!S.pdf) return;
+  const bar = $('#findBar'); bar.hidden = false;
+  const inp = $('#findIn'); inp.focus(); inp.select();
+  if (inp.value.trim() && inp.value.trim().toLowerCase() !== FIND.q) runFind(inp.value);
+}
+function closeFind() {
+  $('#findBar').hidden = true; FIND.q = ''; FIND.hits = []; FIND.cur = -1; FIND.token++;
+  $$('.textLayer .find-hit').forEach(s => s.classList.remove('find-hit', 'find-cur'));
+}
+async function runFind(raw) {
+  const q = raw.trim().toLowerCase();
+  const token = ++FIND.token;
+  FIND.q = q; FIND.hits = []; FIND.cur = -1;
+  $$('.textLayer .find-hit').forEach(s => s.classList.remove('find-hit', 'find-cur'));
+  updateFindCount(true);
+  if (q.length < 2 || !S.pdf) { updateFindCount(); return; }
+  const pdf = S.pdf, start = currentPage(), N = pdf.numPages;
+  let jumped = false;
+  // search from the current page onwards, then wrap around
+  for (let i = 0; i < N; i++) {
+    const n = ((start - 1 + i) % N) + 1;
+    let rec; try { rec = await pageText(pdf, n); } catch (e) { continue; }
+    if (token !== FIND.token || pdf !== S.pdf) return;
+    let at = rec.text.indexOf(q);
+    while (at !== -1) { FIND.hits.push({ page: n, at, len: q.length }); at = rec.text.indexOf(q, at + q.length); }
+    if (!jumped && FIND.hits.length) { jumped = true; FIND.cur = 0; showHit(); }
+    if (i % 8 === 7) { updateFindCount(true); await new Promise(r => setTimeout(r, 0)); }
+  }
+  // keep results in reading order, but stay on the hit we already showed
+  const curHit = FIND.hits[FIND.cur];
+  FIND.hits.sort((a, b) => a.page - b.page || a.at - b.at);
+  FIND.cur = curHit ? FIND.hits.indexOf(curHit) : -1;
+  updateFindCount();
+  markFindOnRendered();
+}
+function updateFindCount(searching) {
+  const n = FIND.hits.length;
+  $('#findCount').textContent = !FIND.q || FIND.q.length < 2 ? '' : n ? `${FIND.cur + 1} of ${n}${searching ? '…' : ''}` : (searching ? 'Searching…' : 'No results');
+}
+function stepFind(dir) {
+  if (!FIND.hits.length) return;
+  FIND.cur = (FIND.cur + dir + FIND.hits.length) % FIND.hits.length;
+  updateFindCount(); showHit();
+}
+function showHit() {
+  const h = FIND.hits[FIND.cur]; if (!h) return;
+  const p = pageEl(h.page);
+  if (p) {
+    const top = p.offsetTop, bottom = top + p.offsetHeight;
+    if (scroller.scrollTop > bottom - 60 || scroller.scrollTop + scroller.clientHeight < top + 60) scrollToPage(h.page);
+  }
+  markFindOnRendered();
+  let tries = 0;
+  const iv = setInterval(() => {
+    const cur = $('.textLayer .find-cur');
+    if (cur || ++tries > 25) {
+      clearInterval(iv);
+      if (cur) {
+        const r = cur.getBoundingClientRect(), sr = scroller.getBoundingClientRect();
+        if (r.top < sr.top + 40 || r.bottom > sr.bottom - 40) scroller.scrollTop += r.top - sr.top - sr.height / 3;
+      }
+    }
+  }, 80);
+}
+function markFind(pEl, n) {
+  if (!FIND.q || !FIND.hits.length) return;
+  const rec = FIND.texts.get(n); if (!rec) return;
+  const spans = [...pEl.querySelectorAll('.textLayer span:not(.markedContent)')];
+  if (!spans.length) return;
+  spans.forEach(s => s.classList.remove('find-hit', 'find-cur'));
+  const cur = FIND.hits[FIND.cur];
+  for (const h of FIND.hits) {
+    if (h.page !== n) continue;
+    for (let i = 0; i < rec.starts.length && i < spans.length; i++) {
+      const s0 = rec.starts[i], s1 = s0 + rec.lens[i];
+      if (s1 > h.at && s0 < h.at + h.len) { spans[i].classList.add('find-hit'); if (h === cur) spans[i].classList.add('find-cur'); }
+    }
+  }
+}
+function markFindOnRendered() { for (const n of rendered.keys()) { const p = pageEl(n); if (p) markFind(p, n); } }
+$('#findBtn').onclick = () => ($('#findBar').hidden ? openFind() : closeFind());
+$('#findIn').addEventListener('input', e => later('find', () => runFind(e.target.value), 260));
+$('#findIn').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); if (FIND.q !== e.target.value.trim().toLowerCase()) runFind(e.target.value); else stepFind(e.shiftKey ? -1 : 1); }
+  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeFind(); }
+});
+$('#findPrev').onclick = () => stepFind(-1);
+$('#findNext').onclick = () => stepFind(1);
+$('#findClose').onclick = closeFind;
+
+// Ctrl+F searches the board when you're working there, otherwise the PDF.
+document.addEventListener('keydown', e => {
+  if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'f' || e.altKey) return;
+  const onBoard = $('#app').classList.contains('focus') || (S.overBoard && !e.target.closest('#reader')) || (NARROW() && $('#app').dataset.view === 'board');
+  if (onBoard && typeof openBoardFind === 'function') { e.preventDefault(); openBoardFind(); return; }
+  if (S.pdf) { e.preventDefault(); if (NARROW()) setView('read'); openFind(); }
+}, true);
 
 /* ---------- highlights in the reader ---------- */
 function drawHL(pEl, n) {
