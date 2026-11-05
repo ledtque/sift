@@ -17,22 +17,38 @@ PDFs are copied into the browser when you add them, so deleting the original fil
 - **Any browser:** *Save full backup file* makes one file with everything, PDFs included.
 - The site works offline once it has been opened, and can be installed as an app from the browser's address bar.
 
-## Board shortcuts
+## Reading
+
+- Select text and press **1–4** (or pick a color) to highlight it. The highlight lands on the PDF's board right away, where you can see it.
+- **Contents** (list icon) jumps through the PDF's own table of contents, when it has one.
+- **Ctrl+F** finds text in the PDF, with next/previous and every match marked on the page.
+- **Ctrl + scroll** zooms the PDF. Each PDF remembers its zoom and the page you stopped on.
+- Click the PDF's name to rename it.
+
+## The board
+
+Every PDF has its own board. Cards show the full highlight; double-click a card to edit its text (the PDF keeps the original), and drag the handle on its right edge to change its width. The bar above a selected card sets its color and text size.
+
+Press **F** for full screen. **Ctrl+F** over the board finds cards. **⋯ → Export as Markdown** saves the board as notes for Obsidian, Notion and the like. Press **?** for all shortcuts.
 
 | Key | Action |
 | --- | --- |
 | V | Select and move |
-| H, or hold Space | Hand: move around the board |
+| H, or hold Space | Move around the board |
 | T | Note: click to write |
 | R | Rectangle: drag to draw |
+| Double-click | Edit a card, or add a note on empty space |
 | A or Ctrl+A | Select everything |
 | Shift + click | Add to or remove from the selection |
-| Delete | Remove selected items (highlights go back to the tray) |
+| Ctrl+C / Ctrl+X / Ctrl+V | Copy, cut, paste (pasting text makes a note) |
+| Ctrl+D | Duplicate |
+| Delete | Remove from the board (highlights stay in the PDF) |
 | Ctrl+Z / Ctrl+Shift+Z | Undo / redo |
+| Ctrl+= / Ctrl+- / Ctrl+0 | Zoom in, out, 100% |
+| Shift+1 | Fit everything |
 | Arrow keys | Nudge selection (Shift for bigger steps) |
+| F | Full screen board, and back |
 | Esc | Clear selection |
-
-In the reader, select text and press 1–4 to highlight in a color.
 
 ## Hosting
 

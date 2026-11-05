@@ -455,6 +455,12 @@ svg.i.s{width:16px;height:16px}
 .help-cols dd{margin:0;color:var(--muted)}
 .help-cols kbd{font-family:var(--f-ui);font-size:12px;background:var(--bg-soft);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 6px;min-width:12px;display:inline-block;text-align:center}
 
+/* ---------- library search ---------- */
+.lib-search{display:flex;align-items:center;gap:6px;margin:2px 12px 8px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--input);color:var(--faint)}
+.lib-search input{flex:1;min-width:0;border:0;background:transparent;padding:7px 0;font-size:13px;color:var(--fg)}
+.lib-search input:focus{outline:none}
+.lib-search:focus-within{border-color:var(--accent)}
+
 /* ---------- narrow ---------- */
 @media (max-width:899px){
   #app,#app.lib-hidden{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"main" "tabs"}
@@ -508,6 +514,7 @@ svg.i.s{width:16px;height:16px}
       <label class="icon-btn" for="fileIn" tabindex="0" title="Add PDFs" aria-label="Add PDFs"><svg class="i s"><use href="#i-plus"/></svg></label>
     </div>
     <input id="fileIn" type="file" accept="application/pdf,.pdf" multiple hidden>
+    <div class="lib-search" id="libSearchWrap" hidden><svg class="i s" aria-hidden="true"><use href="#i-search"/></svg><input id="libSearch" type="text" placeholder="Search PDFs" aria-label="Search PDFs" autocomplete="off"></div>
     <ul id="docList"></ul>
     <div class="lib-foot"><p id="storeNote" class="fine"></p><span id="libCount" hidden></span></div>
   </aside>
@@ -860,7 +867,10 @@ function renderLibrary() {
   }
   const counts = {};
   for (const h of S.hls) counts[h.docId] = (counts[h.docId] || 0) + 1;
-  const docs = [...S.docs].sort((a, b) => (b.opened || b.added) - (a.opened || a.added));
+  $('#libSearchWrap').hidden = S.docs.length < 6;
+  const q = S.docs.length >= 6 ? $('#libSearch').value.trim().toLowerCase() : '';
+  const docs = [...S.docs].sort((a, b) => (b.opened || b.added) - (a.opened || a.added)).filter(d => !q || d.name.toLowerCase().includes(q));
+  if (!docs.length) ul.appendChild(el('li', 'lib-empty', 'No PDF matches that name.'));
   for (const d of docs) {
     const has = S.haveFile.has(d.id) || memFiles.has(d.id);
     const li = el('li', 'doc' + (d.id === S.doc ? ' on' : '') + (has ? '' : ' missing'));
@@ -1094,6 +1104,8 @@ new ResizeObserver(() => {
   if (S.pdf && Math.abs(w - lastW) > 30) later('rescale', () => { lastW = scroller.clientWidth; setZoom(S.zoom); }, 220);
   if (!lastW) lastW = w;
 }).observe(scroller);
+
+$('#libSearch').addEventListener('input', () => renderLibrary());
 
 /* ---------- zoom: Ctrl + scroll or pinch zooms the PDF, and each PDF remembers its zoom ---------- */
 let wheelZoom = null;
