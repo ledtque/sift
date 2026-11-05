@@ -429,6 +429,15 @@ svg.i.s{width:16px;height:16px}
 .toc-item.on{background:var(--accent-soft)}
 .toc-pg{margin-left:auto;font-size:11.5px;color:var(--faint);font-variant-numeric:tabular-nums;flex:none}
 
+/* ---------- card text size ---------- */
+.card[data-size="s"] .card-text{font-size:14px;line-height:1.42;padding:5px 9px 6px}
+.card[data-size="l"] .card-text{font-size:22px;line-height:1.35;padding:9px 13px 10px}
+.card[data-size="xl"] .card-text{font-size:32px;line-height:1.2;padding:10px 15px 12px}
+.bar-sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+.sz{min-width:28px;height:26px;border:0;border-radius:6px;background:transparent;cursor:pointer;font-family:var(--f-hand);font-size:14px;color:var(--fg);padding:0 5px}
+.sz:hover{background:var(--hover)}
+.sz.on{background:var(--accent-soft)}
+
 /* ---------- narrow ---------- */
 @media (max-width:899px){
   #app,#app.lib-hidden{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"main" "tabs"}
@@ -589,6 +598,12 @@ svg.i.s{width:16px;height:16px}
   <button class="ink" data-ink="g" type="button" aria-label="Green" title="Green"></button>
   <button class="ink" data-ink="b" type="button" aria-label="Blue" title="Blue"></button>
   <button class="ink" data-ink="v" type="button" aria-label="Violet" title="Violet"></button>
+  <span class="bar-sep" id="sizeSep"></span>
+  <span class="lab" id="sizeLab">Size</span>
+  <button class="sz" data-size="s" type="button" title="Small text" aria-label="Small text">S</button>
+  <button class="sz" data-size="m" type="button" title="Medium text" aria-label="Medium text">M</button>
+  <button class="sz" data-size="l" type="button" title="Large text" aria-label="Large text">L</button>
+  <button class="sz" data-size="xl" type="button" title="Extra large text, for headings" aria-label="Extra large text">XL</button>
 </div>
 
 <div id="tocPop" class="pop toc-pop" hidden role="dialog" aria-label="Contents"><div id="tocList"></div></div>
@@ -1424,6 +1439,7 @@ function cardEl(c) {
   const e = el('div', 'card' + (S.sel.has(c.id) ? ' sel' : ''));
   e.dataset.id = c.id; e.dataset.color = h ? h.color : (c.color || 'n');
   if (c.ink) e.dataset.ink = c.ink;
+  if (c.size && c.size !== 'm') e.dataset.size = c.size;
   e.style.left = c.x + 'px'; e.style.top = c.y + 'px';
   if (c.w) { e.style.width = c.w + 'px'; e.style.maxWidth = 'none'; }
   const edited = h && c.text != null && c.text !== h.text;
@@ -1614,12 +1630,24 @@ function placeCardBar() {
     return c.ink || ({ y: 'o', g: 'g', p: 'r', b: 'b' }[h ? h.color : c.color] || 'k');
   }).concat(zones.map(z => z.ink || TONE_INK[z.tone || 0] || 'k')));
   $$('.ink', bar).forEach(b => b.classList.toggle('on', inks.size === 1 && inks.has(b.dataset.ink)));
+  const sizes = new Set(cards.map(c => c.size || 'm'));
+  $$('.sz', bar).forEach(b => { b.hidden = !cards.length; b.classList.toggle('on', sizes.size === 1 && sizes.has(b.dataset.size)); });
+  $('#sizeSep').hidden = $('#sizeLab').hidden = !cards.length;
   const w = bar.offsetWidth, bh = bar.offsetHeight;
   let top = r.top - bh - 14; if (top < br.top + 58) top = r.bottom + 30;
   bar.style.left = clamp(r.left, br.left + 8, br.right - w - 8) + 'px';
   bar.style.top = top + 'px';
 }
 $('#cardBar').addEventListener('click', e => {
+  const sz = e.target.closest('.sz');
+  if (sz) {
+    for (const c of selectedCards()) {
+      c.size = sz.dataset.size === 'm' ? undefined : sz.dataset.size;
+      const ce = world.querySelector(`.card[data-id="${c.id}"]`);
+      if (ce) { if (c.size) ce.dataset.size = c.size; else delete ce.dataset.size; }
+    }
+    saveBoard(); drawLinks(); placeCardBar(); return;
+  }
   const b = e.target.closest('.ink'); if (!b) return;
   for (const c of selectedCards()) {
     c.ink = b.dataset.ink || null;
@@ -1986,6 +2014,83 @@ document.addEventListener('keydown', e => {
   }
 });
 document.addEventListener('keyup', e => { if (e.key === ' ' && S.space) { S.space = false; boardEl.classList.remove('space'); } });
+
+/* ---------- copy, cut, paste, duplicate ---------- */
+S.clip = null; S.clipText = '';
+function copySelection() {
+  const b = board(); if (!b || !S.sel.size) return false;
+  const cards = b.cards.filter(c => S.sel.has(c.id)), zones = b.zones.filter(z => S.sel.has(z.id));
+  if (!cards.length && !zones.length) return false;
+  const ids = new Set(cards.map(c => c.id));
+  S.clip = JSON.parse(JSON.stringify({ cards, zones, links: b.links.filter(l => ids.has(l.a) && ids.has(l.b)) }));
+  S.clipText = cards.map(c => { const h = c.hl && hlById(c.hl); return c.text != null ? c.text : (h ? h.text : ''); }).filter(Boolean).join('\n\n');
+  try { if (S.clipText) navigator.clipboard.writeText(S.clipText).catch(() => {}); } catch (e) {}
+  return true;
+}
+function pasteClip(at) {
+  const b = board(); const clip = S.clip; if (!b || !clip) return;
+  const all = clip.cards.map(c => [c.x, c.y]).concat(clip.zones.map(z => [z.x, z.y]));
+  const minX = Math.min(...all.map(p => p[0])), minY = Math.min(...all.map(p => p[1]));
+  let ox, oy;
+  if (at) { ox = at[0] - minX; oy = at[1] - minY; } else { ox = 28; oy = 28; }
+  const map = new Map(), newIds = [];
+  const zones = clip.zones.map(z => { const n = { ...z, id: uid(), x: Math.round(z.x + ox), y: Math.round(z.y + oy) }; newIds.push(n.id); return n; });
+  const cards = clip.cards.filter(c => !c.hl || hlById(c.hl)).map(c => { const n = { ...c, id: uid(), x: Math.round(c.x + ox), y: Math.round(c.y + oy) }; map.set(c.id, n.id); newIds.push(n.id); return n; });
+  b.zones.push(...zones); b.cards.push(...cards);
+  for (const l of clip.links) if (map.has(l.a) && map.has(l.b)) b.links.push({ id: uid(), a: map.get(l.a), b: map.get(l.b) });
+  // next paste lands a little further on, like most drawing tools
+  S.clip = { cards: cards.map(c => ({ ...c })), zones: zones.map(z => ({ ...z })), links: clip.links.map(l => ({ ...l, a: map.get(l.a) || l.a, b: map.get(l.b) || l.b })) };
+  saveBoard(); renderBoard();
+  requestAnimationFrame(() => setSel(newIds));
+}
+function pointerWorld() {
+  if (!S.lastPointer || !S.overBoard) return null;
+  return toWorld(S.lastPointer[0], S.lastPointer[1]);
+}
+boardEl.addEventListener('pointermove', e => { S.lastPointer = [e.clientX, e.clientY]; });
+document.addEventListener('keydown', e => {
+  const typing = e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"]');
+  if (typing || !$('#modal').hidden || !(e.ctrlKey || e.metaKey) || e.altKey) return;
+  const k = e.key.toLowerCase();
+  const textSelected = getSelection && !getSelection().isCollapsed;
+  if ((k === 'c' || k === 'x') && !textSelected && S.sel.size) {
+    if (copySelection()) { e.preventDefault(); if (k === 'x') deleteSelection(); }
+  } else if (k === 'd' && S.sel.size) {
+    e.preventDefault(); if (copySelection()) pasteClip(null);
+  }
+});
+document.addEventListener('paste', e => {
+  const typing = e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"]');
+  if (typing || !$('#modal').hidden) return;
+  const onBoard = S.overBoard || $('#app').classList.contains('focus') || (NARROW() && $('#app').dataset.view === 'board') || S.sel.size;
+  if (!onBoard) return;
+  const text = (e.clipboardData && e.clipboardData.getData('text/plain')) || '';
+  if (S.clip && (!text || text === S.clipText)) { e.preventDefault(); pasteClip(pointerWorld()); return; }
+  if (text.trim()) {
+    e.preventDefault();
+    const [wx, wy] = pointerWorld() || visibleCenter();
+    const c = addCard({ id: uid(), hl: null, x: Math.round(wx - 70), y: Math.round(wy - 18), text: text.trim().slice(0, 5000), color: 'n' });
+    requestAnimationFrame(() => setSel([c.id]));
+  }
+});
+
+/* ---------- zoom shortcuts: Ctrl+= / Ctrl+- / Ctrl+0, and Shift+1 to fit ---------- */
+document.addEventListener('keydown', e => {
+  const typing = e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"]');
+  if (typing) return;
+  const focusMode = $('#app').classList.contains('focus');
+  const onBoard = focusMode || S.overBoard || (NARROW() && $('#app').dataset.view === 'board');
+  if (e.shiftKey && !e.ctrlKey && !e.metaKey && (e.code === 'Digit1')) { if (onBoard || !S.pdf) { e.preventDefault(); fitBoard(); } return; }
+  if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+  const inc = e.key === '=' || e.key === '+', dec = e.key === '-' || e.key === '_', reset = e.key === '0';
+  if (!inc && !dec && !reset) return;
+  e.preventDefault();
+  if (onBoard) {
+    if (reset) { const v = board().view; const r = boardEl.getBoundingClientRect(); const cx = r.width / 2, cy = r.height / 2; animateView({ z: 1, x: cx - (cx - v.x) / v.z, y: cy - (cy - v.y) / v.z }); }
+    else zoomBy(inc ? 1.2 : 1 / 1.2);
+  } else if (S.pdf) setZoom(reset ? 1 : S.zoom * (inc ? 1.15 : 1 / 1.15));
+});
+
 addEventListener('blur', () => { S.space = false; boardEl.classList.remove('space'); });
 
 /* ---------- highlights flow onto the board ---------- */
