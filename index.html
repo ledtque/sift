@@ -483,7 +483,6 @@ svg.i.s{width:16px;height:16px}
   <input id="bName" type="text">
   <button id="recallBtn" class="mi" type="button" aria-pressed="false">Recall mode: off</button>
   <div class="sep"></div>
-  <button id="bNew" class="mi" type="button">New board</button>
   <button id="bDel" class="mi" type="button">Delete this board</button>
   <div class="sep"></div>
   <button id="backupBtn" class="mi" type="button">Backup &amp; restore</button>
@@ -751,6 +750,7 @@ async function openDoc(id, page) {
   $('#pageTotal').textContent = '/ ' + pdf.numPages;
   if (d) { d.opened = Date.now(); DB.put('docs', d); }
   LS.set('doc', id);
+  showBoard(boardForDoc(id).id);
   renderLibrary();
   computeScale(); buildShells();
   const startPage = page || (d && d.lastPage) || 1;
@@ -936,7 +936,9 @@ function createHighlight(color) {
   S.hls.push(h); DB.put('hls', h);
   getSelection().removeAllRanges(); S.pendingRange = null;
   drawHL(pEl, n); renderLibrary();
-  const card = autoPlace(h); saveBoard(); renderBoard();
+  const hb = boardForDoc(S.doc);
+  if (S.boardId !== hb.id) showBoard(hb.id);
+  const card = autoPlace(h, hb); saveBoard(hb); renderBoard();
   requestAnimationFrame(() => flash(world.querySelector(`.card[data-id="${card.id}"]`)));
 }
 scroller.addEventListener('click', e => {
@@ -1025,9 +1027,14 @@ function saveBoard(b = board()) { if (b) later('board' + b.id, () => { commitHis
 function renderBoardSel() {
   const s = $('#boardSel'); s.textContent = '';
   for (const b of S.boards) { const o = el('option', null, b.name); o.value = b.id; s.appendChild(o); }
+  s.hidden = S.boards.length < 2;
   s.value = S.boardId;
 }
-$('#boardSel').addEventListener('change', e => { S.boardId = e.target.value; LS.set('board', S.boardId); S.sel = new Set(); S.selLink = null; renderBoard(); renderTray(); });
+$('#boardSel').addEventListener('change', e => {
+  const b = S.boards.find(x => x.id === e.target.value); if (!b) return;
+  if (b.docId && b.docId !== S.doc && (S.haveFile.has(b.docId) || memFiles.has(b.docId))) openDoc(b.docId);
+  else showBoard(b.id);
+});
 
 const TONE_INK = ['r', 'o', 'g', 'b', 'v'];
 function zoneEl(z) {
@@ -1578,17 +1585,51 @@ function autoPlace(h, b = board()) {
   h.placedOnce = true; DB.put('hls', h);
   return card;
 }
-/* Earlier versions kept highlights in a tray; put any that never reached a board onto this one. */
+/* ---------- one board per PDF ---------- */
+function boardForDoc(docId) {
+  let b = S.boards.find(x => x.docId === docId);
+  if (!b) {
+    const d = S.docs.find(x => x.id === docId);
+    const h = S.hls.find(x => x.docId === docId);
+    b = { id: uid(), docId, name: (d && d.name) || (h && h.docName) || 'PDF', created: Date.now(), view: { x: 60, y: 90, z: 1 }, zones: [], cards: [], links: [] };
+    S.boards.push(b); DB.put('boards', b); renderBoardSel();
+  }
+  return b;
+}
+function showBoard(id) {
+  if (S.boardId === id) return;
+  commitHistory(); S.boardId = id; LS.set('board', id); S.sel = new Set(); S.selLink = null;
+  renderBoardSel(); renderBoard();
+}
+/* Boards from before: move each highlight card to its own PDF's board, with links between them. */
+function splitBoardsByDoc() {
+  for (const old of S.boards.filter(b => !b.docId)) {
+    const moved = new Map();
+    for (const c of old.cards) {
+      const h = c.hl && hlById(c.hl); if (!h) continue;
+      const nb = boardForDoc(h.docId); nb.cards.push(c); moved.set(c.id, nb);
+    }
+    if (!moved.size) continue;
+    old.cards = old.cards.filter(c => !moved.has(c.id));
+    for (const l of [...old.links]) {
+      const ba = moved.get(l.a), bb = moved.get(l.b);
+      if (ba && ba === bb) { ba.links.push(l); old.links = old.links.filter(x => x !== l); }
+      else if (ba || bb) old.links = old.links.filter(x => x !== l);
+    }
+    DB.put('boards', old);
+    for (const nb of new Set(moved.values())) DB.put('boards', nb);
+  }
+}
+/* Highlights that never reached a board (the old tray) go onto their PDF's board. */
 function placeStrays() {
-  const b = board(); if (!b) return;
   const onBoards = new Set(S.boards.flatMap(x => x.cards.filter(c => c.hl).map(c => c.hl)));
-  let n = 0;
+  const touched = new Set();
   for (const h of [...S.hls].sort((a, c) => a.created - c.created)) {
     if (onBoards.has(h.id)) { if (!h.placedOnce) { h.placedOnce = true; DB.put('hls', h); } continue; }
     if (h.placedOnce) continue;
-    autoPlace(h, b); n++;
+    const b = boardForDoc(h.docId); autoPlace(h, b); touched.add(b);
   }
-  if (n) DB.put('boards', b);
+  for (const b of touched) DB.put('boards', b);
 }
 
 /* ---------- board menu ---------- */
@@ -1596,8 +1637,8 @@ $('#boardMenuBtn').onclick = e => {
   const m = $('#boardMenu');
   if (!m.hidden) { m.hidden = true; return; }
   $('#bName').value = board().name;
-  const del = $('#bDel'); del.classList.remove('confirm'); del.textContent = 'Delete this board'; del.disabled = S.boards.length < 2;
-  del.title = S.boards.length < 2 ? 'Make another board first' : '';
+  const del = $('#bDel'); del.classList.remove('confirm'); del.textContent = 'Delete this board';
+  del.hidden = !!board().docId || S.boards.length < 2;
   const r = e.currentTarget.getBoundingClientRect();
   m.hidden = false; const mr = m.getBoundingClientRect();
   m.style.left = clamp(r.left, 8, innerWidth - mr.width - 8) + 'px'; m.style.top = (r.bottom + 6) + 'px';
@@ -1605,14 +1646,9 @@ $('#boardMenuBtn').onclick = e => {
 };
 $('#bName').addEventListener('input', e => { const b = board(); b.name = e.target.value || 'Untitled board'; saveBoard(); renderBoardSel(); });
 $('#bName').addEventListener('keydown', e => { if (e.key === 'Enter') $('#boardMenu').hidden = true; });
-$('#bNew').onclick = () => {
-  const b = { id: uid(), name: 'Board ' + (S.boards.length + 1), created: Date.now(), view: { x: 40, y: 40, z: 1 }, zones: [], cards: [], links: [] };
-  S.boards.push(b); DB.put('boards', b); S.boardId = b.id; LS.set('board', b.id);
-  renderBoardSel(); renderBoard(); renderTray(); $('#bName').value = b.name; $('#bName').focus(); $('#bName').select();
-};
 $('#bDel').onclick = e => twoStep(e.currentTarget, 'Yes, delete it', () => {
   const b = board(); S.boards = S.boards.filter(x => x.id !== b.id); DB.del('boards', b.id);
-  S.boardId = S.boards[0].id; LS.set('board', S.boardId); $('#boardMenu').hidden = true;
+  S.boardId = (S.boards.find(x => x.docId === S.doc) || S.boards[0]).id; LS.set('board', S.boardId); $('#boardMenu').hidden = true;
   renderBoardSel(); renderBoard(); renderTray(); toast('Board deleted. Your highlights are still in the PDFs.');
 });
 document.addEventListener('pointerdown', e => {
@@ -1749,6 +1785,7 @@ async function init() {
     : 'This browser window is blocking storage, so nothing is kept after you close it.';
   if (!S.boards.length) { const b = seedBoard(); S.boards.push(b); DB.put('boards', b); }
   S.boards.sort((a, b) => (a.created || 0) - (b.created || 0));
+  splitBoardsByDoc();
   S.boardId = LS.get('board', null);
   if (!S.boards.find(b => b.id === S.boardId)) S.boardId = S.boards[0].id;
   setTool('select');
