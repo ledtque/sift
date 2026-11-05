@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect x="16" y="16" width="480" height="480" rx="118" fill="#6965db"/>
+  <!-- text lines, slightly hand-drawn -->
+  <path d="M118 160 Q210 154 318 161" fill="none" stroke="#ffffff" stroke-width="34" stroke-linecap="round" opacity=".9"/>
+  <path d="M118 352 Q190 357 262 350" fill="none" stroke="#ffffff" stroke-width="34" stroke-linecap="round" opacity=".9"/>
+  <!-- the highlighted line, pulled out of the text -->
+  <path d="M168 222 Q290 214 412 220 Q420 256 410 292 Q290 298 166 290 Q158 256 168 222 Z" fill="#ffec99" stroke="#1e1e1e" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M206 256 Q290 251 372 255" fill="none" stroke="#1e1e1e" stroke-width="20" stroke-linecap="round"/>
+</svg>

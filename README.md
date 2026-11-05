@@ -1,4 +1,8 @@
+<p align="center"><img src="icons/og-image.png" alt="Sift — Read, highlight, sort." width="600"></p>
+
 # Sift Reader
+
+Live: https://ledtque.github.io/sift/
 
 Read PDFs, highlight what matters, and sort your highlights by hand on a sketchy whiteboard.
 
