@@ -401,6 +401,10 @@ svg.i.s{width:16px;height:16px}
 #reader .vhead{padding-left:12px}
 @media (max-width:899px){ #libClose{display:none} .lib-head{padding-left:18px} }
 
+/* ---------- scroll back to content ---------- */
+.to-content{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:5;padding:0 16px;color:var(--accent)}
+.to-content:hover{background:var(--accent-hover)}
+
 /* ---------- narrow ---------- */
 @media (max-width:899px){
   #app,#app.lib-hidden{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"main" "tabs"}
@@ -505,6 +509,7 @@ svg.i.s{width:16px;height:16px}
           <button id="bOut" type="button" aria-label="Zoom out">−</button>
         </div>
         <div id="boardHint"></div>
+        <button id="toContent" class="island-btn to-content" type="button" hidden>Scroll back to content</button>
       </div>
     </section>
   </main>
@@ -1261,6 +1266,36 @@ function applyView() {
   boardEl.style.backgroundPosition = `${v.x}px ${v.y}px`;
   $('#bFit').textContent = Math.round(v.z * 100) + '%';
   placeCardBar();
+  if (!contentRaf) contentRaf = requestAnimationFrame(checkContentInView);
+}
+/* Like Excalidraw: when nothing on the board is on screen, offer a way back. */
+let contentRaf = 0;
+function boardItems(b) {
+  return b.zones.map(z => [z.x, z.y, z.x + z.w, z.y + z.h])
+    .concat(b.cards.map(c => { const s = cardSize(c.id); return [c.x, c.y, c.x + s.w, c.y + s.h]; }));
+}
+function checkContentInView() {
+  contentRaf = 0;
+  const b = board(), btn = $('#toContent'); if (!b || !btn) return;
+  const W = boardEl.clientWidth, H = boardEl.clientHeight;
+  if (!W || !H) { btn.hidden = true; return; }
+  const v = b.view, x0 = -v.x / v.z, y0 = -v.y / v.z, x1 = (W - v.x) / v.z, y1 = (H - v.y) / v.z;
+  const items = boardItems(b);
+  btn.hidden = !items.length || items.some(i => i[2] > x0 && i[0] < x1 && i[3] > y0 && i[1] < y1);
+}
+let viewAnim = 0;
+function animateView(target) {
+  const b = board(); const from = { ...b.view };
+  cancelAnimationFrame(viewAnim);
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { b.view = target; applyView(); saveView(); return; }
+  const t0 = performance.now(), dur = 380;
+  const step = now => {
+    const t = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - t, 3);
+    b.view = { x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e, z: from.z + (target.z - from.z) * e };
+    applyView();
+    if (t < 1) viewAnim = requestAnimationFrame(step); else saveView();
+  };
+  viewAnim = requestAnimationFrame(step);
 }
 function saveView() { later('view', () => saveBoard(), 500); }
 function toWorld(cx, cy) { const r = boardEl.getBoundingClientRect(); const v = board().view; return [(cx - r.left - v.x) / v.z, (cy - r.top - v.y) / v.z]; }
@@ -1290,9 +1325,9 @@ function fitBoard() {
   const trayW = 0;
   const W = r.width - trayW - 60, H = r.height - 60 - 56;
   const z = clamp(Math.min(W / (x1 - x0), H / (y1 - y0)), 0.2, 1.2);
-  b.view = { z, x: trayW + 30 + (W - (x1 - x0) * z) / 2 - x0 * z, y: 86 + (H - (y1 - y0) * z) / 2 - y0 * z };
-  applyView(); saveView();
+  animateView({ z, x: trayW + 30 + (W - (x1 - x0) * z) / 2 - x0 * z, y: 86 + (H - (y1 - y0) * z) / 2 - y0 * z });
 }
+$('#toContent').onclick = () => fitBoard();
 function centerOn(c) {
   const v = board().view; const r = boardEl.getBoundingClientRect(); const s = cardSize(c.id);
   const trayW = 0;
