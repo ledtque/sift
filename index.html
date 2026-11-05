@@ -1999,17 +1999,11 @@ async function fullBackupBlob() {
   parts.push('}}');
   return new Blob(parts, { type: 'application/json' });
 }
-let downloadsApi = null;
 $('#bkSave').onclick = async () => {
   const btn = $('#bkSave'); btn.disabled = true; const label = btn.textContent; btn.textContent = 'Preparing…';
   try {
     const blob = await fullBackupBlob();
     const filename = `sift-full-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    if (!downloadsApi && window.claude && typeof window.claude.use === 'function') downloadsApi = Promise.resolve(window.claude.use('downloads')).catch(() => null);
-    if (downloadsApi) {
-      const dl = await downloadsApi;
-      if (dl) { try { await dl.save({ filename, data: blob }); } catch (err) { if (!err || err.code !== 'declined') toast('Saving files isn\'t available here.'); } return; }
-    }
     const url = URL.createObjectURL(blob);
     const a = el('a'); a.href = url; a.setAttribute('download', filename);
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 8000);
