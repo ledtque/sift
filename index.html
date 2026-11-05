@@ -412,6 +412,9 @@ svg.i.s{width:16px;height:16px}
 .card:hover .cw-handle,.card.sel .cw-handle{opacity:1}
 #board[data-tool="hand"] .cw-handle,#board.space .cw-handle{display:none}
 
+/* ---------- cards always show their whole text ---------- */
+.card-text,.card.sel .card-text{display:block;-webkit-line-clamp:unset;overflow:visible}
+
 /* ---------- narrow ---------- */
 @media (max-width:899px){
   #app,#app.lib-hidden{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"main" "tabs"}
@@ -1039,7 +1042,7 @@ function createHighlight(color) {
   const hb = boardForDoc(S.doc);
   if (S.boardId !== hb.id) showBoard(hb.id);
   const card = autoPlace(h, hb); saveBoard(hb); renderBoard();
-  requestAnimationFrame(() => flash(world.querySelector(`.card[data-id="${card.id}"]`)));
+  requestAnimationFrame(() => { revealCard(card.id); flash(world.querySelector(`.card[data-id="${card.id}"]`)); });
 }
 scroller.addEventListener('click', e => {
   const sel = getSelection(); if (sel && !sel.isCollapsed) return;
@@ -1776,31 +1779,57 @@ function overlaps(x, y, w, h, b, skipId) {
     return x < c.x + s.w + 14 && x + w + 14 > c.x && y < c.y + s.h + 14 && y + h + 14 > c.y;
   });
 }
-/* Each new highlight lands next to the previous one, in loose rows, with a little jitter. */
+/* New highlights land where you're looking: next to the previous one while that is on screen,
+   otherwise in the first free spot of the visible area. If the board isn't showing, they flow on
+   from the last one, and the view moves to them the next time the board is shown. */
+function visibleWorldRect(b) {
+  if (!boardEl.offsetParent || b !== board()) return null;
+  const r = boardEl.getBoundingClientRect();
+  const [x0, y0] = toWorld(r.left + 24, r.top + 70), [x1, y1] = toWorld(r.right - 24, r.bottom - 64);
+  return x1 - x0 > 80 && y1 - y0 > 60 ? { x0, y0, x1, y1 } : null;
+}
 function autoPlace(h, b = board()) {
   const jitter = n => Math.round((Math.random() - 0.5) * n);
-  const COL = CARD_W + 34;
-  const PER_ROW = boardEl.offsetParent ? clamp(Math.floor((boardEl.clientWidth / b.view.z - 80) / COL), 1, 4) : 3;
-  let f = b.flow;
-  if (!f) {
-    const items = b.cards.map(c => { const s = cardSize(c.id); return [c.x, c.y + s.h]; }).concat(b.zones.map(z => [z.x, z.y + z.h]));
-    if (items.length) f = { x0: Math.min(...items.map(i => i[0])), y: Math.max(...items.map(i => i[1])) + 70 };
-    else if (boardEl.offsetParent) { const [lx, ty] = toWorld(boardEl.getBoundingClientRect().left + 40, boardEl.getBoundingClientRect().top + 90); f = { x0: Math.round(lx), y: Math.round(ty) }; }
-    else f = { x0: 60, y: 90 };
-    f = b.flow = { ...f, i: 0, rowH: 0 };
+  const vis = visibleWorldRect(b);
+  const W = CARD_W, GAP = 30;
+  const H = Math.min(40 + Math.ceil(h.text.length / 28) * 24, vis ? (vis.y1 - vis.y0) : 400);
+  const last = b.cards.find(c => c.id === b.lastAuto);
+  let x, y;
+  const fits = (px, py) => !vis || (px >= vis.x0 - 1 && px + W <= vis.x1 + 1 && py >= vis.y0 - 1 && py + H <= vis.y1 + 1);
+  const free = (px, py) => !overlaps(px, py, W, H, b);
+  const tryPos = (px, py) => { if (fits(px, py) && free(px, py)) { x = px; y = py; return true; } return false; };
+  if (last) {
+    const s = cardSize(last.id);
+    const rowX = b.rowX != null ? b.rowX : last.x;
+    tryPos(last.x + s.w + GAP, last.y) || tryPos(rowX, last.y + s.h + GAP) || tryPos(last.x, last.y + s.h + GAP);
   }
-  const col = f.i % PER_ROW;
-  let x = f.x0 + col * COL + jitter(28), y = f.y + jitter(22);
-  const estH = Math.min(220, 40 + Math.ceil(h.text.length / 26) * 24);
-  let tries = 0;
-  while (overlaps(x, y, CARD_W, estH, b) && tries++ < 60) y += 28;
-  const card = { id: uid(), hl: h.id, x, y };
-  b.cards.push(card);
-  f.rowH = Math.max(f.rowH, y - f.y + estH);
-  f.i++;
-  if (f.i % PER_ROW === 0) { f.y += f.rowH + 30; f.rowH = 0; }
+  if (x == null && vis) {
+    // first free spot in the visible area, scanning in reading order
+    outer: for (let py = vis.y0; py + H <= vis.y1; py += 34)
+      for (let px = vis.x0; px + W <= vis.x1; px += 40) if (tryPos(px, py)) break outer;
+    if (x == null) { x = (vis.x0 + vis.x1 - W) / 2; y = (vis.y0 + vis.y1 - H) / 2; }
+    b.rowX = x;
+  }
+  if (x == null) {
+    if (last) { const s = cardSize(last.id); x = last.x + s.w + GAP; y = last.y; }
+    else { x = 60; y = 90; }
+    let n = 0; while (!free(x, y) && n++ < 60) y += 34;
+  }
+  if (last && Math.abs(y - last.y) > 4 && x < last.x) b.rowX = x;
+  const card = { id: uid(), hl: h.id, x: Math.round(x + jitter(10)), y: Math.round(y + jitter(8)) };
+  b.cards.push(card); b.lastAuto = card.id;
   h.placedOnce = true; DB.put('hls', h);
   return card;
+}
+/* Make sure a card is on screen, moving the view as little as needed. */
+function revealCard(id) {
+  const b = board(); const c = b.cards.find(x => x.id === id); if (!c || !boardEl.offsetParent) return;
+  const vis = visibleWorldRect(b); if (!vis) return;
+  const s = cardSize(id);
+  let dx = 0, dy = 0;
+  if (c.x < vis.x0) dx = vis.x0 - c.x; else if (c.x + s.w > vis.x1) dx = vis.x1 - (c.x + s.w);
+  if (c.y < vis.y0 || s.h > vis.y1 - vis.y0) dy = vis.y0 - c.y; else if (c.y + s.h > vis.y1) dy = vis.y1 - (c.y + s.h);
+  if (dx || dy) { const v = b.view; animateView({ z: v.z, x: v.x + dx * v.z, y: v.y + dy * v.z }); }
 }
 /* ---------- one board per PDF ---------- */
 function boardForDoc(docId) {
@@ -2138,7 +2167,7 @@ async function renderStorageInfo() {
 function setView(v) {
   $('#app').dataset.view = v;
   $$('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.v === v));
-  requestAnimationFrame(() => { if (v === 'board') { drawLinks(); updateCounts(); } placeCardBar(); });
+  requestAnimationFrame(() => { if (v === 'board') { drawLinks(); updateCounts(); const b = board(); if (b && b.lastAuto) revealCard(b.lastAuto); } placeCardBar(); });
 }
 $('#tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setView(b.dataset.v); });
 function toggleLibrary() {
