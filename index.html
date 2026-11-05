@@ -121,7 +121,10 @@ svg.i.s{width:16px;height:16px}
 .vhead{display:flex;align-items:center;gap:8px;height:56px;padding:0 12px;box-sizing:border-box;flex:none;overflow-x:auto;scrollbar-width:none}
 .vhead::-webkit-scrollbar{display:none}
 .spacer{flex:1}
-.title{flex:1;min-width:0;font-family:var(--f-hand);font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:2px}
+.title{flex:1;min-width:0;font-family:var(--f-hand);font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:4px 8px;margin-left:-6px;border:0;border-radius:7px;background:transparent;color:var(--fg)}
+.title:not([readonly]):hover{background:var(--hover)}
+.title:not([readonly]):focus{outline:2px solid var(--accent);outline-offset:0;background:var(--bg)}
+.title[readonly]{cursor:default}
 #reader{flex:0 0 var(--split,50%);min-width:300px;display:flex;flex-direction:column;min-height:0;background:var(--bg-soft)}
 #split{flex:0 0 1px;cursor:col-resize;background:var(--line);position:relative}
 #split::after{content:"";position:absolute;inset:0 -5px;z-index:3}
@@ -434,10 +437,9 @@ svg.i.s{width:16px;height:16px}
       <div class="vhead">
         <button id="libToggle" class="icon-btn" type="button" aria-label="Show library" title="Library"><svg class="i s"><use href="#i-sidebar"/></svg></button>
         <img class="brand" src="favicon.svg" alt="" width="22" height="22">
-        <div id="docTitle" class="title">Sift</div>
+        <input id="docTitle" class="title" type="text" value="Sift" readonly aria-label="PDF name" spellcheck="false" autocomplete="off">
         <div class="pager" id="pager" hidden><input id="pageIn" inputmode="numeric" aria-label="Page number" value=""><span id="pageTotal">/ 0</span></div>
         <div class="seg" id="zoomSeg" hidden role="group" aria-label="Page zoom"><button id="zOut" type="button" aria-label="Zoom out">−</button><button id="zFit" class="lbl" type="button" title="Fit to width">Fit</button><button id="zIn" type="button" aria-label="Zoom in">+</button></div>
-        <button id="readFocus" class="icon-btn" type="button" aria-label="Open the board full screen" title="Board full screen (F)"><svg class="i s"><use href="#i-expand"/></svg></button>
       </div>
       <div id="scroller">
         <div id="pages"></div>
@@ -767,7 +769,7 @@ function closeDoc() {
   if (S.pdf) { try { S.pdf.destroy(); } catch (e) {} }
   S.pdf = null; S.doc = null; io && io.disconnect(); rendered.clear();
   pagesEl.textContent = ''; $('#readerEmpty').hidden = false;
-  $('#docTitle').textContent = 'Sift'; $('#pageTotal').textContent = '/ 0'; $('#pageIn').value = '';
+  $('#docTitle').value = 'Sift'; $('#docTitle').readOnly = true; $('#pageTotal').textContent = '/ 0'; $('#pageIn').value = '';
   $('#pager').hidden = true; $('#zoomSeg').hidden = true;
   LS.set('doc', null);
 }
@@ -789,7 +791,7 @@ async function openDoc(id, page) {
   const p1 = await pdf.getPage(1); const vp = p1.getViewport({ scale: 1 });
   S.base = { w: vp.width, h: vp.height };
   $('#readerEmpty').hidden = true;
-  $('#docTitle').textContent = d ? d.name : 'PDF';
+  $('#docTitle').value = d ? d.name : 'PDF'; $('#docTitle').readOnly = !d;
   $('#pageTotal').textContent = '/ ' + pdf.numPages;
   if (d) { d.opened = Date.now(); DB.put('docs', d); }
   LS.set('doc', id);
@@ -1081,6 +1083,23 @@ $('#boardName').addEventListener('input', e => {
 $('#boardName').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); e.target.blur(); } });
 $('#boardName').addEventListener('blur', e => { if (!e.target.value.trim()) e.target.value = board().name; sizeBoardName(); });
 
+/* ---------- rename the open PDF from the reader header ---------- */
+$('#docTitle').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); if (e.key === 'Escape') { const d = S.docs.find(x => x.id === S.doc); if (d) e.target.value = d.name; } e.target.blur(); } });
+$('#docTitle').addEventListener('change', renameDoc);
+$('#docTitle').addEventListener('blur', renameDoc);
+function renameDoc() {
+  const inp = $('#docTitle'); const d = S.docs.find(x => x.id === S.doc); if (!d || inp.readOnly) return;
+  const name = inp.value.trim();
+  if (!name) { inp.value = d.name; return; }
+  if (name === d.name) return;
+  const old = d.name; d.name = name; DB.put('docs', d);
+  for (const h of S.hls) if (h.docId === d.id) { h.docName = name; DB.put('hls', h); }
+  const b = S.boards.find(x => x.docId === d.id);
+  if (b && b.name === old) { b.name = name; DB.put('boards', b); }
+  renderLibrary(); renderBoardSel(); renderBoard();
+  $('#backName').textContent = name;
+}
+
 /* ---------- focus mode: the board takes the whole window ---------- */
 function setFocus(on, { fullscreen = true } = {}) {
   if (NARROW()) { if (on) setView('board'); return; }
@@ -1099,7 +1118,6 @@ function setFocus(on, { fullscreen = true } = {}) {
   } catch (e) {}
 }
 $('#focusBtn').onclick = () => setFocus(!$('#app').classList.contains('focus'));
-$('#readFocus').onclick = () => setFocus(true);
 $('#backToPdf').onclick = () => setFocus(false);
 
 const TONE_INK = ['r', 'o', 'g', 'b', 'v'];
