@@ -2077,8 +2077,10 @@ document.addEventListener('keydown', e => {
   if (mod && k === 'z') { e.preventDefault(); undo(e.shiftKey); return; }
   if (mod && k === 'y') { e.preventDefault(); undo(true); return; }
   if ((mod && k === 'a') || (!mod && !e.altKey && k === 'a' && $('#selPop').hidden)) {
-    if (getSelection && !getSelection().isCollapsed && !mod) return;
-    e.preventDefault(); if (NARROW()) setView('board'); selectAll(); return;
+    // only when working on the board; over the PDF, Ctrl+A keeps its usual meaning
+    const onBoard = $('#app').classList.contains('focus') || S.overBoard || (NARROW() && $('#app').dataset.view === 'board');
+    if (!onBoard || (getSelection && !getSelection().isCollapsed && !mod)) return;
+    e.preventDefault(); selectAll(); return;
   }
   if (mod || e.altKey) return;
   if (e.key === ' ' && S.overBoard) {
