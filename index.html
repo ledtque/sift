@@ -405,6 +405,13 @@ svg.i.s{width:16px;height:16px}
 .to-content{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:5;padding:0 16px;color:var(--accent)}
 .to-content:hover{background:var(--accent-hover)}
 
+/* ---------- editable text and width ---------- */
+.card-text.editable[contenteditable="true"]{cursor:text;user-select:text;-webkit-user-select:text;outline:none;display:block;-webkit-line-clamp:unset;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.card-meta .edited{font-style:italic;color:var(--faint);flex:none}
+.cw-handle{position:absolute;top:50%;right:-7px;width:10px;height:28px;margin-top:-14px;border-radius:4px;background:var(--bg);box-shadow:inset 0 0 0 1.5px var(--accent);cursor:ew-resize;opacity:0;transition:opacity .12s;z-index:2}
+.card:hover .cw-handle,.card.sel .cw-handle{opacity:1}
+#board[data-tool="hand"] .cw-handle,#board.space .cw-handle{display:none}
+
 /* ---------- narrow ---------- */
 @media (max-width:899px){
   #app,#app.lib-hidden{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"main" "tabs"}
@@ -667,7 +674,15 @@ function placePop(pop, x, y, below = true) {
 }
 function flash(e) { if (!e) return; e.classList.remove('flash'); void e.offsetWidth; e.classList.add('flash'); }
 const debouncers = {};
-function later(key, fn, ms) { clearTimeout(debouncers[key]); debouncers[key] = setTimeout(fn, ms); }
+const pendingFns = {};
+function later(key, fn, ms) {
+  clearTimeout(debouncers[key]); pendingFns[key] = fn;
+  debouncers[key] = setTimeout(() => { delete pendingFns[key]; fn(); }, ms);
+}
+// Save anything still waiting when the tab is hidden or closed.
+function flushLater() { for (const k of Object.keys(pendingFns)) { clearTimeout(debouncers[k]); const f = pendingFns[k]; delete pendingFns[k]; try { f(); } catch (e) {} } }
+addEventListener('pagehide', flushLater);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushLater(); });
 function docName(h) { const d = S.docs.find(d => d.id === h.docId); return d ? d.name : (h.docName || 'Untitled'); }
 function hlById(id) { return S.hls.find(h => h.id === id); }
 function board() { return S.boards.find(b => b.id === S.boardId); }
@@ -1188,21 +1203,35 @@ function cardEl(c) {
   e.dataset.id = c.id; e.dataset.color = h ? h.color : (c.color || 'n');
   if (c.ink) e.dataset.ink = c.ink;
   e.style.left = c.x + 'px'; e.style.top = c.y + 'px';
-  const t = el('div', 'card-text', h ? h.text : (c.text || ''));
+  if (c.w) { e.style.width = c.w + 'px'; e.style.maxWidth = 'none'; }
+  const edited = h && c.text != null && c.text !== h.text;
+  const t = el('div', 'card-text editable', h ? (c.text != null ? c.text : h.text) : (c.text || ''));
+  t.spellcheck = true;
+  t.addEventListener('input', () => { c.text = t.textContent; saveBoard(); drawLinks(); });
   if (!h) {
-    t.classList.add('note-text'); t.dataset.ph = 'Write a note…'; t.spellcheck = true;
-    t.addEventListener('input', () => { c.text = t.textContent; saveBoard(); });
+    t.classList.add('note-text'); t.dataset.ph = 'Write a note…';
     t.addEventListener('blur', () => { t.contentEditable = 'false'; if (!t.textContent.trim()) later('emptynote', () => { const b = board(); if (b.cards.some(x => x.id === c.id && !(x.text || '').trim())) removeCard(c.id); }, 50); });
+  } else {
+    // An emptied highlight goes back to the words from the PDF.
+    t.addEventListener('blur', () => {
+      t.contentEditable = 'false';
+      if (!t.textContent.trim() || t.textContent === h.text) { delete c.text; t.textContent = h.text; saveBoard(); }
+      refreshCardsFor(h.id);
+    });
   }
   e.appendChild(t);
   if (h && h.note) e.appendChild(el('div', 'card-note', h.note));
   const m = el('div', 'card-meta');
-  if (h) { const s = el('button', 'src', `${docName(h)} · p. ${h.page}`); s.type = 'button'; s.title = 'Open in the reader'; m.appendChild(s); }
+  if (h) {
+    const s = el('button', 'src', `${docName(h)} · p. ${h.page}`); s.type = 'button'; s.title = 'Open in the reader'; m.appendChild(s);
+    if (edited) { const ed = el('span', 'edited', 'edited'); ed.title = 'Original: ' + h.text; m.appendChild(ed); }
+  }
   else m.appendChild(el('span', 'lbl', c.src || 'Note'));
   const hd = el('button', 'handle'); hd.type = 'button'; hd.title = 'Drag onto another card to connect them'; hd.setAttribute('aria-label', 'Connect to another card');
   const rm = el('button', 'crm icon-btn', '×'); rm.type = 'button';
   rm.setAttribute('aria-label', h ? 'Remove from board' : 'Delete note'); rm.title = h ? 'Remove from board' : 'Delete note';
   m.append(hd, rm); e.appendChild(m);
+  const wh = el('div', 'cw-handle'); wh.title = 'Drag to change the width'; e.appendChild(wh);
   return e;
 }
 function renderBoard() {
@@ -1413,7 +1442,8 @@ function placeHighlight(hid, wx, wy) {
   return addCard({ id: uid(), hl: hid, x: Math.round(wx - CARD_W / 2), y: Math.round(wy - 30) });
 }
 function editNote(id) {
-  const t = world.querySelector(`.card[data-id="${id}"] .note-text`); if (!t) return;
+  const t = world.querySelector(`.card[data-id="${id}"] .card-text`); if (!t) return;
+  $('#cardBar').hidden = true;
   t.contentEditable = 'true'; t.focus();
   const r = document.createRange(); r.selectNodeContents(t); r.collapse(false);
   const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
@@ -1528,6 +1558,12 @@ boardEl.addEventListener('pointerdown', e => {
     drag = { type: 'link', from: cardE.dataset.id };
     boardEl.setPointerCapture(e.pointerId); e.preventDefault(); return;
   }
+  if (t.closest('.cw-handle') && cardE) {
+    const c = b.cards.find(x => x.id === cardE.dataset.id);
+    if (!S.sel.has(c.id)) setSel([c.id]);
+    drag = { type: 'cwidth', c, el: cardE, sx: e.clientX, w0: cardE.offsetWidth };
+    boardEl.setPointerCapture(e.pointerId); e.preventDefault(); return;
+  }
   if (t.closest('.resize') && zoneE) {
     const z = b.zones.find(z => z.id === zoneE.dataset.id);
     drag = { type: 'resize', z, el: zoneE, sx: e.clientX, sy: e.clientY, w0: z.w, h0: z.h };
@@ -1538,6 +1574,14 @@ boardEl.addEventListener('pointerdown', e => {
     return;
   }
   const hitId = cardE ? cardE.dataset.id : (zoneE && t.closest('.edge') ? zoneE.dataset.id : null);
+  // Double-click to edit: detected here, since moving the card to the front swallows the browser's own dblclick.
+  if (cardE && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+    const now = performance.now(), last = S.lastDown;
+    S.lastDown = { id: cardE.dataset.id, t: now, x: e.clientX, y: e.clientY };
+    if (last && last.id === cardE.dataset.id && now - last.t < 450 && Math.hypot(e.clientX - last.x, e.clientY - last.y) < 6) {
+      S.lastDown = null; setSel([cardE.dataset.id]); editNote(cardE.dataset.id); e.preventDefault(); return;
+    }
+  }
   if (hitId) {
     if (e.shiftKey || e.ctrlKey || e.metaKey) {
       const s2 = new Set(S.sel); if (s2.has(hitId)) s2.delete(hitId); else s2.add(hitId); setSel([...s2]);
@@ -1576,6 +1620,11 @@ boardEl.addEventListener('pointermove', e => {
         if (i.el) { i.el.style.left = i.o.x + 'px'; i.el.style.top = i.o.y + 'px'; }
       }
       drawLinks(); break;
+    }
+    case 'cwidth': {
+      drag.c.w = Math.round(clamp(drag.w0 + dx, 90, 720));
+      drag.el.style.width = drag.c.w + 'px'; drag.el.style.maxWidth = 'none';
+      drawLinks(); placeCardBar(); break;
     }
     case 'resize': {
       drag.z.w = Math.round(Math.max(160, drag.w0 + dx)); drag.z.h = Math.round(Math.max(110, drag.h0 + dy));
@@ -1623,7 +1672,7 @@ function endDrag(e) {
       if (cardE && !e.shiftKey && !e.ctrlKey && !e.metaKey && S.sel.size > 1) setSel([cardE.dataset.id]);
     } else { saveBoard(); updateCounts(); }
     placeCardBar();
-  } else if (d.type === 'resize') { saveBoard(); updateCounts(); }
+  } else if (d.type === 'resize' || d.type === 'cwidth') { saveBoard(); updateCounts(); }
   else if (d.type === 'pan') {
     if (!d.moved && d.clear) clearSel();
     if (d.moved) saveView();
@@ -1656,9 +1705,14 @@ boardEl.addEventListener('click', e => {
   if (rm) removeCard(c.id);
 });
 boardEl.addEventListener('dblclick', e => {
-  const ce = e.target.closest('.card');
-  if (ce && S.tool !== 'hand' && ce.querySelector('.note-text')) { setSel([ce.dataset.id]); editNote(ce.dataset.id); return; }
-  if (S.tool === 'hand' || e.target.closest('.card,.canvas-ctl,.edge,button,input,textarea')) return;
+  // Pointer capture makes the board the event target, so look at what is actually under the pointer.
+  const under = document.elementFromPoint(e.clientX, e.clientY) || e.target;
+  const ce = under.closest('.card');
+  if (ce && S.tool !== 'hand') {
+    if (under.closest('button,.cw-handle')) return;
+    setSel([ce.dataset.id]); editNote(ce.dataset.id); return;
+  }
+  if (S.tool === 'hand' || under.closest('.card,.canvas-ctl,.edge,.to-content,button,input,textarea')) return;
   const [wx, wy] = toWorld(e.clientX, e.clientY); addNoteAt(wx, wy);
 });
 boardEl.addEventListener('wheel', e => {
@@ -1725,12 +1779,14 @@ function overlaps(x, y, w, h, b, skipId) {
 /* Each new highlight lands next to the previous one, in loose rows, with a little jitter. */
 function autoPlace(h, b = board()) {
   const jitter = n => Math.round((Math.random() - 0.5) * n);
-  const COL = CARD_W + 34, PER_ROW = 3;
+  const COL = CARD_W + 34;
+  const PER_ROW = boardEl.offsetParent ? clamp(Math.floor((boardEl.clientWidth / b.view.z - 80) / COL), 1, 4) : 3;
   let f = b.flow;
   if (!f) {
     const items = b.cards.map(c => { const s = cardSize(c.id); return [c.x, c.y + s.h]; }).concat(b.zones.map(z => [z.x, z.y + z.h]));
     if (items.length) f = { x0: Math.min(...items.map(i => i[0])), y: Math.max(...items.map(i => i[1])) + 70 };
-    else { const [cx, cy] = boardEl.offsetParent ? visibleCenter() : [400, 300]; f = { x0: Math.round(cx - COL * 1.5), y: Math.round(cy - 120) }; }
+    else if (boardEl.offsetParent) { const [lx, ty] = toWorld(boardEl.getBoundingClientRect().left + 40, boardEl.getBoundingClientRect().top + 90); f = { x0: Math.round(lx), y: Math.round(ty) }; }
+    else f = { x0: 60, y: 90 };
     f = b.flow = { ...f, i: 0, rowH: 0 };
   }
   const col = f.i % PER_ROW;
