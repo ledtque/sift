@@ -438,6 +438,23 @@ svg.i.s{width:16px;height:16px}
 .sz:hover{background:var(--hover)}
 .sz.on{background:var(--accent-soft)}
 
+/* ---------- board find, export, help ---------- */
+.board-find{position:absolute;top:62px;left:50%;transform:translateX(-50%);z-index:7;display:flex;align-items:center;gap:4px;padding:4px 6px 4px 10px;background:var(--island);border-radius:9px;box-shadow:var(--island-shadow);width:min(360px,calc(100% - 24px));box-sizing:border-box;color:var(--muted)}
+.board-find input{flex:1;min-width:40px;border:0;background:transparent;font-size:14px;padding:6px 4px;color:var(--fg)}
+.board-find input:focus{outline:none}
+#board.finding .card:not(.find-match){opacity:.22}
+#board.finding .card.find-match .card-text{box-shadow:0 0 0 3px rgba(255,196,0,.55)}
+.mi{display:flex;align-items:center;gap:8px}
+.mi kbd{margin-left:auto;font-family:var(--f-ui);font-size:11px;color:var(--faint)}
+.overlay{position:fixed;inset:0;z-index:90;background:rgba(18,18,18,.35);display:grid;place-items:center;padding:16px}
+.help-sheet{width:min(760px,100%)}
+.help-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:4px 32px}
+.help-cols h3{margin:16px 0 8px}
+.help-cols dl{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;margin:0;font-size:13.5px;align-items:baseline}
+.help-cols dt{white-space:nowrap;color:var(--fg)}
+.help-cols dd{margin:0;color:var(--muted)}
+.help-cols kbd{font-family:var(--f-ui);font-size:12px;background:var(--bg-soft);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 6px;min-width:12px;display:inline-block;text-align:center}
+
 /* ---------- narrow ---------- */
 @media (max-width:899px){
   #app,#app.lib-hidden{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"main" "tabs"}
@@ -555,6 +572,12 @@ svg.i.s{width:16px;height:16px}
         </div>
         <div id="boardHint"></div>
         <button id="toContent" class="island-btn to-content" type="button" hidden>Scroll back to content</button>
+        <div id="boardFind" class="board-find" hidden role="search">
+          <svg class="i s" aria-hidden="true"><use href="#i-search"/></svg>
+          <input id="bfIn" type="text" placeholder="Find on this board" aria-label="Find on this board" autocomplete="off" spellcheck="false">
+          <span id="bfCount" class="find-count" aria-live="polite"></span>
+          <button id="bfClose" class="icon-btn" type="button" aria-label="Close search" title="Close (Esc)">×</button>
+        </div>
       </div>
     </section>
   </main>
@@ -609,12 +632,15 @@ svg.i.s{width:16px;height:16px}
 <div id="tocPop" class="pop toc-pop" hidden role="dialog" aria-label="Contents"><div id="tocList"></div></div>
 
 <div id="boardMenu" class="pop" hidden role="dialog" aria-label="Board options">
+  <button id="bfMenu" class="mi" type="button">Find on this board<kbd>Ctrl F</kbd></button>
+  <button id="exportMd" class="mi" type="button">Export as Markdown</button>
   <button id="recallBtn" class="mi" type="button" aria-pressed="false">Recall mode: off</button>
   <div class="sep"></div>
   <button id="bDel" class="mi" type="button">Delete this board</button>
   <div class="sep"></div>
   <button id="backupBtn" class="mi" type="button">Backup &amp; restore</button>
   <button id="themeBtn" class="mi" type="button">Switch light / dark</button>
+  <button id="helpBtn" class="mi" type="button">Keyboard shortcuts<kbd>?</kbd></button>
 </div>
 
 <div id="modal" hidden>
@@ -637,6 +663,57 @@ svg.i.s{width:16px;height:16px}
     <p>One file with everything, PDFs included. Works in every browser.</p>
     <div class="row"><button id="bkSave" class="btn" type="button">Save full backup file</button></div>
     <p id="storeInfo" class="fine" style="margin-top:16px"></p>
+  </div>
+</div>
+
+<div id="helpModal" class="overlay" hidden>
+  <div class="sheet help-sheet" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <button id="helpClose" class="icon-btn close" type="button" aria-label="Close">×</button>
+    <h2 id="helpTitle">Keyboard shortcuts</h2>
+    <div class="help-cols">
+      <section>
+        <h3>Reading</h3>
+        <dl>
+          <dt><kbd>1</kbd>–<kbd>4</kbd></dt><dd>Highlight the selected text</dd>
+          <dt><kbd>Ctrl</kbd> <kbd>F</kbd></dt><dd>Find in the PDF</dd>
+          <dt><kbd>Ctrl</kbd> + scroll</dt><dd>Zoom the PDF</dd>
+          <dt><kbd>Ctrl</kbd> <kbd>+</kbd> / <kbd>−</kbd> / <kbd>0</kbd></dt><dd>Zoom in, out, fit width</dd>
+          <dt><kbd>F</kbd></dt><dd>Board full screen, and back</dd>
+        </dl>
+      </section>
+      <section>
+        <h3>Board tools</h3>
+        <dl>
+          <dt><kbd>V</kbd></dt><dd>Select and move</dd>
+          <dt><kbd>H</kbd> or hold <kbd>Space</kbd></dt><dd>Move around</dd>
+          <dt><kbd>T</kbd></dt><dd>Note</dd>
+          <dt><kbd>R</kbd></dt><dd>Rectangle</dd>
+          <dt>Double-click</dt><dd>Edit a card, or add a note</dd>
+        </dl>
+      </section>
+      <section>
+        <h3>Selection</h3>
+        <dl>
+          <dt><kbd>A</kbd> / <kbd>Ctrl</kbd> <kbd>A</kbd></dt><dd>Select everything</dd>
+          <dt><kbd>Shift</kbd> + click</dt><dd>Add to selection</dd>
+          <dt><kbd>Ctrl</kbd> <kbd>C</kbd> / <kbd>X</kbd> / <kbd>V</kbd></dt><dd>Copy, cut, paste</dd>
+          <dt><kbd>Ctrl</kbd> <kbd>D</kbd></dt><dd>Duplicate</dd>
+          <dt><kbd>Delete</kbd></dt><dd>Remove from the board</dd>
+          <dt>Arrow keys</dt><dd>Nudge (with <kbd>Shift</kbd>: further)</dd>
+        </dl>
+      </section>
+      <section>
+        <h3>Board view</h3>
+        <dl>
+          <dt><kbd>Ctrl</kbd> <kbd>Z</kbd> / <kbd>Shift</kbd> <kbd>Z</kbd></dt><dd>Undo, redo</dd>
+          <dt><kbd>Ctrl</kbd> <kbd>F</kbd></dt><dd>Find on the board</dd>
+          <dt><kbd>Ctrl</kbd> <kbd>+</kbd> / <kbd>−</kbd></dt><dd>Zoom in, out</dd>
+          <dt><kbd>Ctrl</kbd> <kbd>0</kbd></dt><dd>Zoom to 100%</dd>
+          <dt><kbd>Shift</kbd> <kbd>1</kbd></dt><dd>Fit everything</dd>
+          <dt><kbd>Esc</kbd></dt><dd>Clear selection</dd>
+        </dl>
+      </section>
+    </div>
   </div>
 </div>
 
@@ -1484,7 +1561,7 @@ function renderBoard() {
   applyView();
   boardEl.classList.toggle('recall', S.recall);
   updateHint();
-  requestAnimationFrame(() => { drawLinks(); updateCounts(); placeCardBar(); });
+  requestAnimationFrame(() => { drawLinks(); updateCounts(); placeCardBar(); if (!$('#boardFind').hidden && $('#bfIn').value.trim()) { const q = $('#bfIn').value.trim().toLowerCase(); for (const c of board().cards) if (cardTextOf(c).toLowerCase().includes(q)) { const e = world.querySelector(`.card[data-id="${c.id}"]`); if (e) e.classList.add('find-match'); } } });
 }
 function refreshCardsFor(hid) {
   const b = board();
@@ -2014,6 +2091,111 @@ document.addEventListener('keydown', e => {
   }
 });
 document.addEventListener('keyup', e => { if (e.key === ' ' && S.space) { S.space = false; boardEl.classList.remove('space'); } });
+
+
+/* ---------- find on the board ---------- */
+const BF = { matches: [], cur: -1 };
+function cardTextOf(c) { const h = c.hl && hlById(c.hl); return (c.text != null ? c.text : (h ? h.text : '')) + ' ' + ((h && h.note) || ''); }
+function openBoardFind() {
+  if (NARROW()) setView('board');
+  $('#boardFind').hidden = false; const i = $('#bfIn'); i.focus(); i.select();
+  if (i.value.trim()) runBoardFind(i.value);
+}
+function closeBoardFind() {
+  $('#boardFind').hidden = true; BF.matches = []; BF.cur = -1;
+  boardEl.classList.remove('finding'); $$('.card.find-match', world).forEach(c => c.classList.remove('find-match'));
+}
+function runBoardFind(raw) {
+  const q = raw.trim().toLowerCase(); const b = board();
+  $$('.card.find-match', world).forEach(c => c.classList.remove('find-match'));
+  if (!q) { BF.matches = []; BF.cur = -1; boardEl.classList.remove('finding'); $('#bfCount').textContent = ''; return; }
+  BF.matches = b.cards.filter(c => cardTextOf(c).toLowerCase().includes(q)).sort((a, c) => a.y - c.y || a.x - c.x);
+  for (const c of BF.matches) { const e = world.querySelector(`.card[data-id="${c.id}"]`); if (e) e.classList.add('find-match'); }
+  boardEl.classList.add('finding');
+  BF.cur = BF.matches.length ? 0 : -1;
+  showBoardMatch();
+}
+function showBoardMatch() {
+  const n = BF.matches.length;
+  $('#bfCount').textContent = n ? `${BF.cur + 1} of ${n}` : 'No cards';
+  const c = BF.matches[BF.cur]; if (!c) return;
+  const v = board().view, r = boardEl.getBoundingClientRect(), s = cardSize(c.id);
+  animateView({ z: v.z, x: r.width / 2 - (c.x + s.w / 2) * v.z, y: r.height / 2 - (c.y + s.h / 2) * v.z });
+  setSel([c.id]);
+}
+$('#bfIn').addEventListener('input', e => runBoardFind(e.target.value));
+$('#bfIn').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); if (BF.matches.length) { BF.cur = (BF.cur + (e.shiftKey ? -1 : 1) + BF.matches.length) % BF.matches.length; showBoardMatch(); } }
+  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeBoardFind(); }
+});
+$('#bfClose').onclick = closeBoardFind;
+$('#bfMenu').onclick = () => { $('#boardMenu').hidden = true; openBoardFind(); };
+
+/* ---------- export a board as Markdown ---------- */
+function boardMarkdown(b) {
+  const doc = b.docId && S.docs.find(d => d.id === b.docId);
+  const lines = [`# ${b.name}`, ''];
+  if (doc) lines.push(`Source: ${doc.name}`, '');
+  const size = c => { const e = world.querySelector(`.card[data-id="${c.id}"]`); return e ? { w: e.offsetWidth, h: e.offsetHeight } : { w: CARD_W, h: 80 }; };
+  const center = c => { const s = size(c); return [c.x + s.w / 2, c.y + s.h / 2]; };
+  const inside = (c, z) => { const [x, y] = center(c); return x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h; };
+  const order = (a, c) => (Math.abs(a.y - c.y) < 40 ? a.x - c.x : a.y - c.y);
+  const fmt = c => {
+    const h = c.hl && hlById(c.hl);
+    const text = (c.text != null ? c.text : (h ? h.text : '')).trim();
+    if (!text) return [];
+    if (!h) {
+      if (c.size === 'xl') return ['', `## ${text}`, ''];
+      if (c.size === 'l') return ['', `### ${text}`, ''];
+      return [`- ${text.replace(/\n+/g, ' ')}`];
+    }
+    const out = [`> ${text.replace(/\n+/g, ' ')}`, h.docId === b.docId ? `> — p. ${h.page}` : `> — ${docName(h)}, p. ${h.page}`];
+    if (c.text != null && c.text !== h.text) out.push(`> (original: ${h.text.replace(/\n+/g, ' ')})`);
+    if (h.note) out.push('', `Note: ${h.note}`);
+    out.push('');
+    return out;
+  };
+  const used = new Set();
+  const zones = [...b.zones].sort(order);
+  zones.forEach((z, i) => {
+    const cards = b.cards.filter(c => !used.has(c.id) && inside(c, z)).sort(order);
+    if (!cards.length) return;
+    cards.forEach(c => used.add(c.id));
+    lines.push(zones.length > 1 ? `## Area ${i + 1}` : '## Area', '');
+    for (const c of cards) lines.push(...fmt(c));
+    lines.push('');
+  });
+  const rest = b.cards.filter(c => !used.has(c.id)).sort(order);
+  if (rest.length && used.size) lines.push('## Elsewhere on the board', '');
+  for (const c of rest) lines.push(...fmt(c));
+  const label = id => { const c = b.cards.find(x => x.id === id); const t = c ? cardTextOf(c).trim() : ''; return t.length > 60 ? t.slice(0, 57) + '…' : t; };
+  if (b.links.length) { lines.push('', '## Connections', ''); for (const l of b.links) lines.push(`- ${label(l.a)} ↔ ${label(l.b)}`); }
+  lines.push('', `_Exported from Sift on ${new Date().toLocaleDateString()}_`, '');
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n');
+}
+$('#exportMd').onclick = () => {
+  $('#boardMenu').hidden = true;
+  const b = board(); if (!b) return;
+  const md = boardMarkdown(b);
+  const name = (b.name || 'board').replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 80) || 'board';
+  const url = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
+  const a = el('a'); a.href = url; a.setAttribute('download', name + '.md');
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 8000);
+  toast('Exported. The file works in Obsidian, Notion and most note apps.', 2600);
+};
+
+/* ---------- keyboard shortcuts sheet ---------- */
+function openHelp() { $('#boardMenu').hidden = true; $('#helpModal').hidden = false; $('#helpClose').focus(); }
+function closeHelp() { $('#helpModal').hidden = true; }
+$('#helpBtn').onclick = openHelp;
+$('#helpClose').onclick = closeHelp;
+$('#helpModal').addEventListener('click', e => { if (e.target.id === 'helpModal') closeHelp(); });
+document.addEventListener('keydown', e => {
+  const typing = e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"]');
+  if (e.key === 'Escape' && !$('#helpModal').hidden) { closeHelp(); return; }
+  if (e.key === 'Escape' && !$('#boardFind').hidden && !typing) { closeBoardFind(); return; }
+  if (!typing && e.key === '?' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); $('#helpModal').hidden ? openHelp() : closeHelp(); }
+});
 
 /* ---------- copy, cut, paste, duplicate ---------- */
 S.clip = null; S.clipText = '';
