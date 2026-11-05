@@ -379,6 +379,22 @@ svg.i.s{width:16px;height:16px}
 @media (prefers-reduced-motion: reduce){ #reader,#app{transition:none} }
 @media (max-width:899px){ #focusBtn,#readFocus,#backToPdf{display:none} }
 
+/* ---------- backup status ---------- */
+.bk-chip{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 10px;border:0;border-radius:99px;background:transparent;color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;flex:none;white-space:nowrap}
+.bk-chip:hover{background:var(--hover);color:var(--fg)}
+.bk-chip .dot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.bk-chip[data-tone="ok"] .dot{background:var(--sg)}
+.bk-chip[data-tone="busy"] .dot{background:var(--accent);animation:bkpulse 1s ease-in-out infinite}
+.bk-chip[data-tone="warn"]{color:var(--sy)}
+.bk-chip[data-tone="warn"] .dot{background:var(--sy)}
+.bk-chip[data-tone="off"]{color:var(--accent)}
+.bk-chip[data-tone="off"] .dot{background:transparent;box-shadow:inset 0 0 0 1.5px var(--accent)}
+@keyframes bkpulse{50%{opacity:.35}}
+@media (prefers-reduced-motion: reduce){ .bk-chip[data-tone="busy"] .dot{animation:none} }
+.sheet h3:first-of-type{margin-top:14px}
+.bk-tip{margin-top:10px;max-width:58ch}
+@media (max-width:899px){ #bkChipText{display:none} .bk-chip{padding:0 8px} }
+
 /* ---------- narrow ---------- */
 @media (max-width:899px){
   #app,#app.lib-hidden{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"main" "tabs"}
@@ -438,6 +454,7 @@ svg.i.s{width:16px;height:16px}
         <button id="libToggle" class="icon-btn" type="button" aria-label="Show library" title="Library"><svg class="i s"><use href="#i-sidebar"/></svg></button>
         <img class="brand" src="favicon.svg" alt="" width="22" height="22">
         <input id="docTitle" class="title" type="text" value="Sift" readonly aria-label="PDF name" spellcheck="false" autocomplete="off">
+        <button id="bkChip" class="bk-chip" type="button" data-tone="off"><span class="dot" aria-hidden="true"></span><span id="bkChipText">Turn on backup</span></button>
         <div class="pager" id="pager" hidden><input id="pageIn" inputmode="numeric" aria-label="Page number" value=""><span id="pageTotal">/ 0</span></div>
         <div class="seg" id="zoomSeg" hidden role="group" aria-label="Page zoom"><button id="zOut" type="button" aria-label="Zoom out">−</button><button id="zFit" class="lbl" type="button" title="Fit to width">Fit</button><button id="zIn" type="button" aria-label="Zoom in">+</button></div>
       </div>
@@ -538,13 +555,22 @@ svg.i.s{width:16px;height:16px}
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
     <button id="mClose" class="icon-btn close" type="button" aria-label="Close">×</button>
     <h2 id="mTitle">Backup &amp; restore</h2>
-    <p>Your highlights and boards are saved in this browser only. Save a backup now and then, and always before clearing browser data. PDFs are not part of the backup: add them again later and their highlights reconnect on their own.</p>
-    <div class="row"><button id="bkSave" class="btn primary" type="button">Save backup file</button><button id="bkCopy" class="btn" type="button">Copy backup text</button></div>
+    <h3>Automatic backup</h3>
+    <p id="bkAutoText"></p>
+    <div class="row">
+      <button id="bkPick" class="btn primary" type="button">Choose backup folder</button>
+      <button id="bkResume" class="btn primary" type="button" hidden>Resume</button>
+      <button id="bkNow" class="btn" type="button" hidden>Back up now</button>
+      <button id="bkOff" class="btn ghost" type="button" hidden>Turn off</button>
+    </div>
+    <p id="bkTip" class="fine bk-tip">Tip: pick a folder inside Google Drive, OneDrive, Dropbox or iCloud Drive on your computer. Then your library is in the cloud too, and a new computer gets everything back with "Restore from a backup folder".</p>
     <h3>Restore</h3>
-    <div class="row"><label class="btn" for="bkFile" tabindex="0">Restore from file</label><input id="bkFile" type="file" accept=".json,application/json" hidden></div>
-    <textarea id="bkText" placeholder="Or paste backup text here"></textarea>
-    <div class="row"><button id="bkPaste" class="btn" type="button">Restore pasted text</button></div>
-    <p class="fine" style="margin-top:12px">Restoring adds to what's here. Nothing is deleted.</p>
+    <div class="row"><button id="bkRestoreDir" class="btn" type="button">Restore from a backup folder</button><label class="btn" for="bkFile" tabindex="0">Restore from a backup file</label><input id="bkFile" type="file" accept=".json,application/json" hidden></div>
+    <p class="fine">Restoring adds to what's here. Nothing is deleted.</p>
+    <h3>Backup file</h3>
+    <p>One file with everything, PDFs included. Works in every browser.</p>
+    <div class="row"><button id="bkSave" class="btn" type="button">Save full backup file</button></div>
+    <p id="storeInfo" class="fine" style="margin-top:16px"></p>
   </div>
 </div>
 
@@ -581,10 +607,10 @@ const DB = {
   open() {
     return new Promise(res => {
       try {
-        const r = indexedDB.open('sift-reader', 1);
+        const r = indexedDB.open('sift-reader', 2);
         r.onupgradeneeded = () => {
           const d = r.result;
-          for (const [n, k] of [['docs', 'id'], ['files', 'k'], ['hls', 'id'], ['boards', 'id']])
+          for (const [n, k] of [['docs', 'id'], ['files', 'k'], ['hls', 'id'], ['boards', 'id'], ['meta', 'k']])
             if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, { keyPath: k });
         };
         r.onsuccess = () => { this.db = r.result; res(true); };
@@ -606,8 +632,9 @@ const DB = {
   all(s) { return this.req(s, 'readonly', o => o.getAll()).then(v => v || []); },
   keys(s) { return this.req(s, 'readonly', o => o.getAllKeys()).then(v => v || []); },
   get(s, k) { return this.req(s, 'readonly', o => o.get(k)); },
-  put(s, v) { return this.req(s, 'readwrite', o => o.put(v)); },
-  del(s, k) { return this.req(s, 'readwrite', o => o.delete(k)); }
+  put(s, v) { const p = this.req(s, 'readwrite', o => o.put(v)); this.changed(s); return p; },
+  del(s, k) { const p = this.req(s, 'readwrite', o => o.delete(k)); this.changed(s); return p; },
+  changed(s) { if (s !== 'meta') { try { scheduleBackup(); } catch (e) {} } }
 };
 
 /* ---------- small ui helpers ---------- */
@@ -889,7 +916,7 @@ scroller.addEventListener('scroll', () => {
     const n = currentPage();
     if (document.activeElement !== $('#pageIn')) $('#pageIn').value = n;
     const d = S.docs.find(d => d.id === S.doc);
-    if (d && d.lastPage !== n) { d.lastPage = n; later('lastpage', () => DB.put('docs', d), 900); }
+    if (d && d.lastPage !== n) { d.lastPage = n; later('lastpage', () => DB.req('docs', 'readwrite', st => st.put(d)), 900); }
     hidePop($('#hlPop'));
   });
 }, { passive: true });
@@ -1744,7 +1771,7 @@ document.addEventListener('pointerdown', e => {
 });
 
 /* ---------- backup ---------- */
-function openModal() { $('#modal').hidden = false; $('#bkText').value = ''; $('#mClose').focus(); }
+function openModal() { $('#modal').hidden = false; renderBackupStatus(); renderStorageInfo(); $('#mClose').focus(); }
 function closeModal() { $('#modal').hidden = true; }
 $('#backupBtn').onclick = () => { $('#boardMenu').hidden = true; openModal(); };
 $('#themeBtn').onclick = () => { toggleTheme(); };
@@ -1761,64 +1788,257 @@ function toggleTheme() {
 
 $('#mClose').onclick = closeModal;
 $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
-function backupJSON() {
-  return JSON.stringify({ app: 'sift-reader', version: 1, saved: new Date().toISOString(), docs: S.docs, highlights: S.hls, boards: S.boards });
+/* ---------- backups ----------
+   Automatic: in Chrome/Edge the person picks a folder once; after every change Sift writes
+   sift-data.json (highlights, boards, PDF list), a dated copy under history/, and each PDF under pdfs/.
+   Everywhere: a single backup file with everything, PDFs included. */
+const BK = { supported: 'showDirectoryPicker' in window, handle: null, state: 'off', last: 0, busy: false, again: false, pending: false, names: null, restoring: false, askedThisVisit: false };
+const pdfName = id => String(id).replace(/[^a-z0-9_-]/gi, '').slice(0, 64) + '.pdf';
+function bkRel(t) {
+  if (!t) return '';
+  const s = Math.round((Date.now() - t) / 1000);
+  if (s < 45) return 'just now';
+  if (s < 3600) return `${Math.round(s / 60)} min ago`;
+  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+  return new Date(t).toLocaleDateString();
+}
+function scheduleBackup() {
+  if (BK.restoring) return;
+  BK.pending = true; renderBackupStatus();
+  if (BK.state === 'on') later('autobackup', runBackup, 1800);
+}
+async function blobFor(id) {
+  let b = memFiles.get(id);
+  if (!b) { const rec = await DB.get('files', id); b = rec && rec.blob; }
+  return b || null;
+}
+function backupData() {
+  return { app: 'sift-reader', version: 2, saved: new Date().toISOString(), docs: S.docs, highlights: S.hls, boards: S.boards };
+}
+async function writeFile(dir, name, data) {
+  const fh = await dir.getFileHandle(name, { create: true });
+  const w = await fh.createWritable(); await w.write(data); await w.close();
+}
+async function runBackup() {
+  if (BK.state !== 'on' || !BK.handle) return;
+  if (BK.busy) { BK.again = true; return; }
+  BK.busy = true; renderBackupStatus();
+  try {
+    const dir = BK.handle;
+    const pd = await dir.getDirectoryHandle('pdfs', { create: true });
+    if (!BK.names) { BK.names = new Set(); for await (const [name] of pd.entries()) BK.names.add(name); }
+    for (const d of S.docs) {
+      const name = pdfName(d.id);
+      if (BK.names.has(name)) continue;
+      const blob = await blobFor(d.id); if (!blob) continue;
+      await writeFile(pd, name, blob); BK.names.add(name);
+    }
+    const json = JSON.stringify(backupData());
+    await writeFile(dir, 'sift-data.json', json);
+    const hist = await dir.getDirectoryHandle('history', { create: true });
+    await writeFile(hist, `sift-data-${new Date().toISOString().slice(0, 10)}.json`, json);
+    BK.last = Date.now(); BK.pending = false;
+    DB.put('meta', { k: 'backupLast', v: BK.last });
+  } catch (e) {
+    if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) BK.state = 'paused';
+    else if (e && e.name === 'NotFoundError') BK.state = 'missing';
+    else console.warn('backup', e);
+  }
+  BK.busy = false; renderBackupStatus();
+  if (BK.again) { BK.again = false; later('autobackup', runBackup, 400); }
+}
+async function readBackupFolder(dir) {
+  let data = null;
+  try { const fh = await dir.getFileHandle('sift-data.json'); data = JSON.parse(await (await fh.getFile()).text()); } catch (e) { return null; }
+  if (!data || data.app !== 'sift-reader') return null;
+  let pd = null; try { pd = await dir.getDirectoryHandle('pdfs'); } catch (e) {}
+  const getPdf = async id => { if (!pd) return null; try { return await (await pd.getFileHandle(pdfName(id))).getFile(); } catch (e) { return null; } };
+  return { data, getPdf };
+}
+async function useFolder(dir, { restoreFirst = true } = {}) {
+  BK.handle = dir; BK.names = null;
+  await DB.put('meta', { k: 'backupDir', v: dir });
+  if (restoreFirst) {
+    const found = await readBackupFolder(dir);
+    if (found) await restoreData(found.data, found.getPdf, { quiet: true });
+  }
+  BK.state = 'on'; renderBackupStatus();
+  await runBackup();
+}
+async function pickFolder({ restoreFirst = true } = {}) {
+  if (!BK.supported) { toast('Automatic backup works in Chrome and Edge. Use "Save full backup file" in this browser.', 4200); return; }
+  let dir;
+  try { dir = await window.showDirectoryPicker({ id: 'sift-backup', mode: 'readwrite', startIn: 'documents' }); }
+  catch (e) { return; }
+  await useFolder(dir, { restoreFirst });
+  toast(`Automatic backup is on. Everything is saved to "${dir.name}".`, 3600);
+}
+async function resumeBackup() {
+  if (!BK.handle) return pickFolder();
+  try {
+    const p = await BK.handle.requestPermission({ mode: 'readwrite' });
+    if (p === 'granted') { BK.state = 'on'; renderBackupStatus(); runBackup(); }
+    else { BK.state = 'paused'; renderBackupStatus(); }
+  } catch (e) { BK.state = 'paused'; renderBackupStatus(); }
+}
+async function initBackup() {
+  const last = await DB.get('meta', 'backupLast'); BK.last = last ? last.v : 0;
+  if (!BK.supported) { BK.state = 'unsupported'; renderBackupStatus(); return; }
+  const rec = await DB.get('meta', 'backupDir');
+  if (!rec || !rec.v) { BK.state = 'off'; renderBackupStatus(); return; }
+  BK.handle = rec.v;
+  let p = 'prompt';
+  try { p = await BK.handle.queryPermission({ mode: 'readwrite' }); } catch (e) {}
+  BK.state = p === 'granted' ? 'on' : 'paused';
+  renderBackupStatus();
+  if (BK.state === 'on') runBackup();
+}
+// A paused backup resumes on the first click anywhere, since the browser only asks during a click.
+document.addEventListener('pointerdown', e => {
+  if (BK.state !== 'paused' || BK.askedThisVisit || e.target.closest('#modal')) return;
+  BK.askedThisVisit = true; resumeBackup();
+}, true);
+
+function renderBackupStatus() {
+  const chip = $('#bkChip'); if (!chip) return;
+  let label, tone, tip;
+  if (BK.state === 'on') {
+    if (BK.busy || BK.pending) { label = 'Saving…'; tone = 'busy'; tip = 'Saving to your backup folder'; }
+    else { label = 'Backed up'; tone = 'ok'; tip = `Saved to "${BK.handle ? BK.handle.name : 'folder'}" ${bkRel(BK.last)}`; }
+  } else if (BK.state === 'paused') { label = 'Resume backup'; tone = 'warn'; tip = 'Click to let Sift keep saving to your backup folder'; }
+  else if (BK.state === 'missing') { label = 'Backup folder missing'; tone = 'warn'; tip = 'Choose the backup folder again'; }
+  else if (BK.state === 'unsupported') { label = 'Back up'; tone = 'off'; tip = 'Save a full backup file'; }
+  else { label = 'Turn on backup'; tone = 'off'; tip = 'Pick a folder and Sift saves everything there automatically'; }
+  chip.dataset.tone = tone; chip.title = tip; $('#bkChipText').textContent = label;
+  // dialog
+  const t = $('#bkAutoText'); if (!t) return;
+  const on = BK.state === 'on';
+  if (BK.state === 'unsupported') t.textContent = 'This browser can\'t write to a folder on its own. In Chrome or Edge, Sift can keep a backup folder up to date by itself. Here, save a full backup file now and then.';
+  else if (on) t.textContent = `On. Everything, PDFs included, is saved to "${BK.handle.name}" after each change. Last saved ${bkRel(BK.last) || 'not yet'}.`;
+  else if (BK.state === 'paused') t.textContent = `Paused. Your browser needs one click to let Sift keep writing to "${BK.handle ? BK.handle.name : 'your folder'}".`;
+  else if (BK.state === 'missing') t.textContent = 'The backup folder was moved or deleted. Choose it again, or pick a new one.';
+  else t.textContent = 'Off. Pick a folder once, and Sift saves your PDFs, highlights and boards there after every change.';
+  $('#bkPick').hidden = BK.state === 'unsupported';
+  $('#bkPick').textContent = BK.handle && BK.state !== 'missing' ? 'Change folder' : 'Choose backup folder';
+  $('#bkPick').className = 'btn' + (on || BK.state === 'paused' ? '' : ' primary');
+  $('#bkResume').hidden = BK.state !== 'paused';
+  $('#bkNow').hidden = !on;
+  $('#bkOff').hidden = !(on || BK.state === 'paused' || BK.state === 'missing');
+  $('#bkRestoreDir').hidden = !BK.supported;
+  $('#bkTip').hidden = BK.state === 'unsupported';
+}
+setInterval(renderBackupStatus, 30000);
+
+/* ---------- restore ---------- */
+async function restoreData(data, getPdf, { quiet = false } = {}) {
+  if (!data || data.app !== 'sift-reader') { toast('That isn\'t a Sift backup.'); return; }
+  BK.restoring = true;
+  let nh = 0, nb = 0, nf = 0;
+  try {
+    for (const d of data.docs || []) {
+      if (!S.docs.find(x => x.id === d.id)) { S.docs.push(d); await DB.put('docs', d); }
+      if (getPdf && !S.haveFile.has(d.id) && !memFiles.has(d.id)) {
+        const f = await getPdf(d.id);
+        if (f) {
+          const blob = new Blob([await f.arrayBuffer()], { type: 'application/pdf' });
+          memFiles.set(d.id, blob);
+          if (await DB.put('files', { k: d.id, blob }) != null) S.haveFile.add(d.id);
+          nf++;
+        }
+      }
+    }
+    for (const h of data.highlights || []) {
+      const i = S.hls.findIndex(x => x.id === h.id);
+      if (i >= 0) S.hls[i] = h; else { S.hls.push(h); nh++; }
+      await DB.put('hls', h);
+    }
+    for (const b of data.boards || []) {
+      const i = S.boards.findIndex(x => x.id === b.id);
+      if (i >= 0) S.boards[i] = b; else { S.boards.push(b); nb++; }
+      await DB.put('boards', b);
+    }
+  } finally { BK.restoring = false; }
+  splitBoardsByDoc();
+  if (!board()) S.boardId = S.boards[0].id;
+  renderLibrary(); renderBoardSel(); renderBoard();
+  if (S.doc) { for (const n of rendered.keys()) redrawPage(n); }
+  else { const first = S.docs.find(d => S.haveFile.has(d.id)); if (first) openDoc(first.id); }
+  if (nh || nb || nf || !quiet) toast(`Restored ${nf} PDF${nf === 1 ? '' : 's'}, ${nh} highlight${nh === 1 ? '' : 's'} and ${nb} board${nb === 1 ? '' : 's'}.`, 3600);
+  scheduleBackup();
+}
+async function restoreFromFolder() {
+  if (!BK.supported) return;
+  let dir; try { dir = await window.showDirectoryPicker({ id: 'sift-backup', mode: 'readwrite' }); } catch (e) { return; }
+  const found = await readBackupFolder(dir);
+  if (!found) { toast(`"${dir.name}" has no Sift backup in it. Pick the folder that contains sift-data.json.`, 4200); return; }
+  await restoreData(found.data, found.getPdf);
+  await useFolder(dir, { restoreFirst: false });
+  closeModal();
+}
+async function restoreFromFile(file) {
+  let data;
+  try { data = JSON.parse(await file.text()); } catch (e) { toast('That isn\'t a Sift backup file.'); return; }
+  const pdfs = data && data.pdfs || {};
+  const getPdf = async id => pdfs[id] ? await (await fetch('data:application/pdf;base64,' + pdfs[id])).blob() : null;
+  await restoreData(data, getPdf);
+  closeModal();
+}
+
+/* ---------- full backup file (PDFs included) ---------- */
+function blobToBase64(blob) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.onerror = rej; r.readAsDataURL(blob); });
+}
+async function fullBackupBlob() {
+  const head = JSON.stringify(backupData());
+  const parts = [head.slice(0, -1), ',"pdfs":{'];
+  let first = true;
+  for (const d of S.docs) {
+    const blob = await blobFor(d.id); if (!blob) continue;
+    parts.push((first ? '' : ',') + JSON.stringify(d.id) + ':"' + await blobToBase64(blob) + '"'); first = false;
+  }
+  parts.push('}}');
+  return new Blob(parts, { type: 'application/json' });
 }
 let downloadsApi = null;
 $('#bkSave').onclick = async () => {
-  const filename = `sift-backup-${new Date().toISOString().slice(0, 10)}.json`;
-  const data = backupJSON();
-  if (!downloadsApi && window.claude && typeof window.claude.use === 'function') {
-    downloadsApi = Promise.resolve(window.claude.use('downloads')).catch(() => null);
-  }
-  if (downloadsApi) {
-    const dl = await downloadsApi;
-    if (!dl) { toast('Saving files isn\'t available here. Use "Copy backup text" instead.'); return; }
-    try { await dl.save({ filename, data }); toast('Backup saved.'); }
-    catch (err) {
-      if (err && err.code === 'declined') return;
-      if (err && err.code === 'rate_limited') { toast('A save prompt is already open. Try again in a moment.'); return; }
-      toast('Saving files isn\'t available here. Use "Copy backup text" instead.');
-    }
-    return;
-  }
-  // Opened as a local file: a regular browser download works.
+  const btn = $('#bkSave'); btn.disabled = true; const label = btn.textContent; btn.textContent = 'Preparing…';
   try {
-    const url = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+    const blob = await fullBackupBlob();
+    const filename = `sift-full-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    if (!downloadsApi && window.claude && typeof window.claude.use === 'function') downloadsApi = Promise.resolve(window.claude.use('downloads')).catch(() => null);
+    if (downloadsApi) {
+      const dl = await downloadsApi;
+      if (dl) { try { await dl.save({ filename, data: blob }); } catch (err) { if (!err || err.code !== 'declined') toast('Saving files isn\'t available here.'); } return; }
+    }
+    const url = URL.createObjectURL(blob);
     const a = el('a'); a.href = url; a.setAttribute('download', filename);
-    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
-  } catch (e) { toast('Saving a file didn\'t work. Use "Copy backup text" instead.'); }
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 8000);
+    BK.lastFile = Date.now();
+  } catch (e) { toast('The backup file could not be made. Try again.'); }
+  finally { btn.disabled = false; btn.textContent = label; }
 };
-$('#bkCopy').onclick = () => {
-  const txt = backupJSON();
-  const fallback = () => { const t = $('#bkText'); t.value = txt; t.focus(); t.select(); toast('Copy the selected text with Ctrl + C.'); };
-  try { navigator.clipboard.writeText(txt).then(() => toast('Backup copied. Paste it somewhere safe.'), fallback); } catch (e) { fallback(); }
-};
-$('#bkFile').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (f) restore(await f.text()); });
-$('#bkPaste').onclick = () => { const t = $('#bkText').value.trim(); if (!t) { toast('Paste backup text first.'); return; } restore(t); };
-async function restore(txt) {
-  let data;
-  try { data = JSON.parse(txt); } catch (e) { toast('That isn\'t a Sift backup. Check that you copied all of it.'); return; }
-  if (!data || data.app !== 'sift-reader') { toast('That isn\'t a Sift backup.'); return; }
-  let nh = 0, nb = 0;
-  for (const d of data.docs || []) {
-    const cur = S.docs.find(x => x.id === d.id);
-    if (cur) continue; S.docs.push(d); await DB.put('docs', d);
-  }
-  for (const h of data.highlights || []) {
-    const i = S.hls.findIndex(x => x.id === h.id);
-    if (i >= 0) S.hls[i] = h; else { S.hls.push(h); nh++; }
-    await DB.put('hls', h);
-  }
-  for (const b of data.boards || []) {
-    const i = S.boards.findIndex(x => x.id === b.id);
-    if (i >= 0) S.boards[i] = b; else { S.boards.push(b); nb++; }
-    await DB.put('boards', b);
-  }
-  renderLibrary(); renderBoardSel(); renderBoard(); renderTrayDocs(); renderTray();
-  if (S.doc) { for (const n of rendered.keys()) redrawPage(n); }
-  closeModal();
-  toast(`Restored. ${nh} new highlight${nh === 1 ? '' : 's'}, ${nb} new board${nb === 1 ? '' : 's'}.`);
+$('#bkFile').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) restoreFromFile(f); });
+$('#bkPick').onclick = () => pickFolder();
+$('#bkResume').onclick = () => resumeBackup();
+$('#bkNow').onclick = () => { BK.names = null; runBackup().then(() => toast('Backed up.', 1600)); };
+$('#bkOff').onclick = async () => { BK.state = BK.supported ? 'off' : 'unsupported'; BK.handle = null; await DB.del('meta', 'backupDir'); renderBackupStatus(); toast('Automatic backup is off. Files already in the folder stay there.'); };
+$('#bkRestoreDir').onclick = () => restoreFromFolder();
+$('#bkChip').onclick = () => { if (BK.state === 'paused') resumeBackup(); else openModal(); };
+
+async function renderStorageInfo() {
+  const box = $('#storeInfo'); if (!box) return;
+  let txt = '';
+  try {
+    if (navigator.storage && navigator.storage.estimate) {
+      const { usage } = await navigator.storage.estimate();
+      txt += `Using ${(usage / 1048576).toFixed(usage > 10485760 ? 0 : 1)} MB in this browser. `;
+    }
+    if (navigator.storage && navigator.storage.persisted) {
+      const p = await navigator.storage.persisted();
+      txt += p ? 'This browser has agreed not to clear it on its own.' : 'The browser may clear it if your disk gets full.';
+    }
+  } catch (e) {}
+  box.textContent = txt;
 }
 
 /* ---------- layout ---------- */
@@ -1868,8 +2088,9 @@ async function init() {
     try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
   }
   $('#storeNote').textContent = S.dbOk
-    ? 'Saved in this browser. PDFs open from here next time.'
+    ? 'Your PDFs, highlights and boards live in this browser, even if you delete the files from your computer.'
     : 'This browser window is blocking storage, so nothing is kept after you close it.';
+  if (S.dbOk) initBackup(); else { BK.state = 'off'; renderBackupStatus(); }
   if (!S.boards.length) { const b = seedBoard(); S.boards.push(b); DB.put('boards', b); }
   S.boards.sort((a, b) => (a.created || 0) - (b.created || 0));
   splitBoardsByDoc();
@@ -1884,6 +2105,7 @@ async function init() {
   if (NARROW()) setView('read');
 }
 init();
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
 </script>
 
