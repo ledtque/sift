@@ -395,6 +395,12 @@ svg.i.s{width:16px;height:16px}
 .bk-tip{margin-top:10px;max-width:58ch}
 @media (max-width:899px){ #bkChipText{display:none} .bk-chip{padding:0 8px} }
 
+/* ---------- library toggle stays in the top-left corner ---------- */
+.lib-head{padding:0 10px 0 12px;gap:8px}
+#app:not(.lib-hidden) #libToggle{display:none}
+#reader .vhead{padding-left:12px}
+@media (max-width:899px){ #libClose{display:none} .lib-head{padding-left:18px} }
+
 /* ---------- narrow ---------- */
 @media (max-width:899px){
   #app,#app.lib-hidden{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"main" "tabs"}
@@ -440,7 +446,9 @@ svg.i.s{width:16px;height:16px}
 <div id="app" data-view="read" class="lib-hidden">
   <aside id="lib" aria-label="Library">
     <div class="lib-head">
-      <span class="lib-title"><img src="favicon.svg" alt="" width="20" height="20">Library</span>
+      <button id="libClose" class="icon-btn" type="button" aria-label="Hide library" title="Hide library"><svg class="i s"><use href="#i-sidebar"/></svg></button>
+      <span class="lib-title">Library</span>
+      <span class="spacer"></span>
       <label class="icon-btn" for="fileIn" tabindex="0" title="Add PDFs" aria-label="Add PDFs"><svg class="i s"><use href="#i-plus"/></svg></label>
     </div>
     <input id="fileIn" type="file" accept="application/pdf,.pdf" multiple hidden>
@@ -2042,10 +2050,12 @@ function setView(v) {
   requestAnimationFrame(() => { if (v === 'board') { drawLinks(); updateCounts(); } placeCardBar(); });
 }
 $('#tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setView(b.dataset.v); });
-$('#libToggle').onclick = () => {
+function toggleLibrary() {
   const hid = $('#app').classList.toggle('lib-hidden'); LS.set('libHidden', hid);
-  $('#libToggle').setAttribute('aria-label', hid ? 'Show library' : 'Hide library');
-};
+  (hid ? $('#libToggle') : $('#libClose')).focus({ preventScroll: true });
+}
+$('#libToggle').onclick = toggleLibrary;
+$('#libClose').onclick = toggleLibrary;
 (() => {
   const sp = $('#split'), panes = $('#panes');
   const set = f => { f = clamp(f, 0.22, 0.78); panes.style.setProperty('--split', (f * 100).toFixed(1) + '%'); LS.set('split', f); };
