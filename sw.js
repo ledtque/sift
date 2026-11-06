@@ -1,6 +1,6 @@
 // Sift offline support: keeps the app itself available without a connection.
 // Your PDFs, highlights and boards are stored separately in IndexedDB and are never touched here.
-const CACHE = 'sift-v1';
+const CACHE = 'sift-v2';
 const CORE = [
   './',
   'index.html',
@@ -36,8 +36,9 @@ self.addEventListener('fetch', event => {
   // The page itself: try the network first so updates show up right away, fall back to the cache offline.
   if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(req)
-        .then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put('index.html', copy)); return res; })
+      // ask the server every time (not the browser's HTTP cache), so a new version shows up on the next open
+      fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' })
+        .then(res => { if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put('index.html', copy)); } return res; })
         .catch(() => caches.match('index.html'))
     );
     return;
