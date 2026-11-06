@@ -315,8 +315,6 @@ svg.i.s{width:16px;height:16px}
 #board.recall .card:hover .card-text,#board.recall .card.sel .card-text{color:var(--k);text-shadow:none}
 .zone{background:repeating-linear-gradient(-42deg,color-mix(in srgb,var(--t) 16%,transparent) 0 1.2px,transparent 1.2px 11px)}
 .ghost-card{width:max-content;max-width:260px}
-#cardBar{display:flex;align-items:center;gap:6px;padding:6px 8px;z-index:58}
-#cardBar .lab{font-size:12.5px;color:var(--muted);padding:0 3px 0 2px}
 .ink{width:24px;height:24px;border-radius:6px;border:0;padding:0;cursor:pointer;background:var(--k);box-shadow:inset 0 0 0 1px rgba(0,0,0,.1)}
 .ink[data-ink=k]{--k:var(--ink-k)} .ink[data-ink=r]{--k:var(--ink-r)} .ink[data-ink=o]{--k:var(--ink-o)} .ink[data-ink=g]{--k:var(--ink-g)} .ink[data-ink=b]{--k:var(--ink-b)} .ink[data-ink=v]{--k:var(--ink-v)}
 .ink:hover{transform:scale(1.08)}
@@ -485,6 +483,29 @@ svg.i.s{width:16px;height:16px}
 .mm-toggle[aria-pressed="true"]{color:var(--accent)}
 .canvas-ctl .mm-toggle{border-right:1px solid var(--line);border-radius:8px 0 0 8px}
 
+/* ---------- style panel ---------- */
+.props{position:absolute;left:12px;top:62px;z-index:6;width:228px;max-height:calc(100% - 140px);overflow:auto;background:var(--island);border-radius:10px;box-shadow:var(--island-shadow);padding:12px 12px 14px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;box-sizing:border-box}
+.p-sec h4{margin:0 0 7px;font-size:11.5px;font-weight:600;color:var(--muted);letter-spacing:.01em}
+.p-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.p-gap{width:6px}
+.p-btn{width:32px;height:32px;border:0;border-radius:7px;background:var(--bg-soft);color:var(--fg);cursor:pointer;display:grid;place-items:center;padding:0;font-family:var(--f-hand);font-size:15px}
+.p-btn:hover{background:var(--hover)}
+.p-btn.on{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.p-btn.p-b{font-family:var(--f-ui);font-weight:700}
+.p-btn.p-i{font-family:Georgia,serif;font-style:italic;font-size:16px}
+.props .ink{width:28px;height:28px}
+.card[data-bold] .card-text{font-weight:700}
+.card[data-italic] .card-text{font-style:italic}
+.card[data-align="center"] .card-text{text-align:center}
+.card[data-align="right"] .card-text{text-align:right}
+.card[data-frame="off"] .card-text{border-color:transparent}
+.zone[data-sw="s"]::before{border-width:1.25px}
+.zone[data-sw="l"]::before{border-width:4px}
+.zone[data-sw="s"]::after{opacity:.35}
+@media (max-width:899px){
+  .props{top:auto;bottom:58px;left:8px;right:8px;width:auto;max-height:42%;flex-direction:row;flex-wrap:wrap;gap:10px 16px;padding:10px 12px}
+}
+
 /* ---------- narrow ---------- */
 @media (max-width:899px){
   #app,#app.lib-hidden{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"main" "tabs"}
@@ -531,6 +552,15 @@ svg.i.s{width:16px;height:16px}
   <symbol id="i-lay-pdf" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M7.5 9h9M7.5 12.5h9M7.5 16h5.5"/></symbol>
   <symbol id="i-lay-split" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M12 4v16M6 9h3.5M6 12.5h3.5"/><rect x="14.5" y="9" width="3.5" height="3" rx=".6"/></symbol>
   <symbol id="i-lay-board" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><rect x="6.5" y="8" width="5" height="3.5" rx=".8"/><rect x="12.5" y="12.5" width="5" height="3.5" rx=".8"/><path d="M11.5 10l2 2.5"/></symbol>
+  <symbol id="i-al-left" viewBox="0 0 24 24"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></symbol>
+  <symbol id="i-al-center" viewBox="0 0 24 24"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></symbol>
+  <symbol id="i-al-right" viewBox="0 0 24 24"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></symbol>
+  <symbol id="i-frame-on" viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="12" rx="3"/><path d="M8 12h8"/></symbol>
+  <symbol id="i-frame-off" viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="12" rx="3" stroke-dasharray="1.5 3"/><path d="M8 12h8"/></symbol>
+  <symbol id="i-to-front" viewBox="0 0 24 24"><path d="M12 20V9M7.5 13.5 12 9l4.5 4.5M5 4.5h14"/></symbol>
+  <symbol id="i-to-back" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></symbol>
+  <symbol id="i-dup" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="12" height="12" rx="2"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/></symbol>
   <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></symbol>
 </svg>
 
@@ -614,6 +644,47 @@ svg.i.s{width:16px;height:16px}
           <button id="mmToggle" class="mm-toggle" type="button" title="Minimap — M" aria-label="Show or hide the minimap" aria-pressed="true"><svg class="i s"><use href="#i-map"/></svg></button>
         </div>
         <div id="boardHint"></div>
+        <aside id="props" class="props" hidden aria-label="Style of the selection">
+          <section class="p-sec" id="pColor"><h4>Color</h4><div class="p-row">
+            <button class="ink" data-ink="k" type="button" aria-label="Black" title="Black"></button>
+            <button class="ink" data-ink="r" type="button" aria-label="Red" title="Red"></button>
+            <button class="ink" data-ink="o" type="button" aria-label="Orange" title="Orange"></button>
+            <button class="ink" data-ink="g" type="button" aria-label="Green" title="Green"></button>
+            <button class="ink" data-ink="b" type="button" aria-label="Blue" title="Blue"></button>
+            <button class="ink" data-ink="v" type="button" aria-label="Violet" title="Violet"></button>
+          </div></section>
+          <section class="p-sec" id="pSize"><h4>Font size</h4><div class="p-row">
+            <button class="p-btn" data-size="s" type="button" title="Small" aria-label="Small text">S</button>
+            <button class="p-btn" data-size="m" type="button" title="Medium" aria-label="Medium text">M</button>
+            <button class="p-btn" data-size="l" type="button" title="Large" aria-label="Large text">L</button>
+            <button class="p-btn" data-size="xl" type="button" title="Extra large, for headings" aria-label="Extra large text">XL</button>
+          </div></section>
+          <section class="p-sec" id="pText"><h4>Text</h4><div class="p-row">
+            <button class="p-btn p-b" data-act="bold" type="button" title="Bold (Ctrl+B)" aria-label="Bold">B</button>
+            <button class="p-btn p-i" data-act="italic" type="button" title="Italic (Ctrl+I)" aria-label="Italic">I</button>
+            <span class="p-gap"></span>
+            <button class="p-btn" data-align="left" type="button" title="Align left" aria-label="Align left"><svg class="i s"><use href="#i-al-left"/></svg></button>
+            <button class="p-btn" data-align="center" type="button" title="Align center" aria-label="Align center"><svg class="i s"><use href="#i-al-center"/></svg></button>
+            <button class="p-btn" data-align="right" type="button" title="Align right" aria-label="Align right"><svg class="i s"><use href="#i-al-right"/></svg></button>
+          </div></section>
+          <section class="p-sec" id="pFrame"><h4>Frame</h4><div class="p-row">
+            <button class="p-btn" data-frame="on" type="button" title="With a frame" aria-label="With a frame"><svg class="i s"><use href="#i-frame-on"/></svg></button>
+            <button class="p-btn" data-frame="off" type="button" title="No frame" aria-label="No frame"><svg class="i s"><use href="#i-frame-off"/></svg></button>
+          </div></section>
+          <section class="p-sec" id="pStroke"><h4>Stroke width</h4><div class="p-row">
+            <button class="p-btn" data-sw="s" type="button" title="Thin" aria-label="Thin"><svg class="i s" viewBox="0 0 24 24"><path d="M4 12h16" stroke-width="1.2"/></svg></button>
+            <button class="p-btn" data-sw="m" type="button" title="Normal" aria-label="Normal"><svg class="i s" viewBox="0 0 24 24"><path d="M4 12h16" stroke-width="2.2"/></svg></button>
+            <button class="p-btn" data-sw="l" type="button" title="Bold" aria-label="Bold stroke"><svg class="i s" viewBox="0 0 24 24"><path d="M4 12h16" stroke-width="4"/></svg></button>
+          </div></section>
+          <section class="p-sec" id="pLayer"><h4>Layers</h4><div class="p-row">
+            <button class="p-btn" data-act="back" type="button" title="Send to back (Ctrl+Shift+[)" aria-label="Send to back"><svg class="i s"><use href="#i-to-back"/></svg></button>
+            <button class="p-btn" data-act="front" type="button" title="Bring to front (Ctrl+Shift+])" aria-label="Bring to front"><svg class="i s"><use href="#i-to-front"/></svg></button>
+          </div></section>
+          <section class="p-sec" id="pActions"><h4>Actions</h4><div class="p-row">
+            <button class="p-btn" data-act="dup" type="button" title="Duplicate (Ctrl+D)" aria-label="Duplicate"><svg class="i s"><use href="#i-dup"/></svg></button>
+            <button class="p-btn" data-act="del" type="button" title="Delete (Delete)" aria-label="Delete"><svg class="i s"><use href="#i-trash"/></svg></button>
+          </div></section>
+        </aside>
         <div id="minimap" class="minimap" hidden><canvas id="mmCanvas" aria-label="Minimap: click or drag to move around the board"></canvas></div>
         <button id="toContent" class="island-btn to-content" type="button" hidden>Scroll back to content</button>
         <div id="boardFind" class="board-find" hidden role="search">
@@ -657,21 +728,6 @@ svg.i.s{width:16px;height:16px}
   </div>
 </div>
 
-<div id="cardBar" class="pop" hidden role="toolbar" aria-label="Text color">
-  <span class="lab">Color</span>
-  <button class="ink" data-ink="k" type="button" aria-label="Black" title="Black"></button>
-  <button class="ink" data-ink="r" type="button" aria-label="Red" title="Red"></button>
-  <button class="ink" data-ink="o" type="button" aria-label="Orange" title="Orange"></button>
-  <button class="ink" data-ink="g" type="button" aria-label="Green" title="Green"></button>
-  <button class="ink" data-ink="b" type="button" aria-label="Blue" title="Blue"></button>
-  <button class="ink" data-ink="v" type="button" aria-label="Violet" title="Violet"></button>
-  <span class="bar-sep" id="sizeSep"></span>
-  <span class="lab" id="sizeLab">Size</span>
-  <button class="sz" data-size="s" type="button" title="Small text" aria-label="Small text">S</button>
-  <button class="sz" data-size="m" type="button" title="Medium text" aria-label="Medium text">M</button>
-  <button class="sz" data-size="l" type="button" title="Large text" aria-label="Large text">L</button>
-  <button class="sz" data-size="xl" type="button" title="Extra large text, for headings" aria-label="Extra large text">XL</button>
-</div>
 
 <div id="tocPop" class="pop toc-pop" hidden role="dialog" aria-label="Contents"><div id="tocList"></div></div>
 
@@ -746,6 +802,8 @@ svg.i.s{width:16px;height:16px}
           <dt><kbd>Shift</kbd> + click</dt><dd>Add to selection</dd>
           <dt><kbd>Ctrl</kbd> <kbd>C</kbd> / <kbd>X</kbd> / <kbd>V</kbd></dt><dd>Copy, cut, paste</dd>
           <dt><kbd>Ctrl</kbd> <kbd>D</kbd></dt><dd>Duplicate</dd>
+          <dt><kbd>Ctrl</kbd> <kbd>B</kbd> / <kbd>I</kbd></dt><dd>Bold, italic</dd>
+          <dt><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>]</kbd> / <kbd>[</kbd></dt><dd>Bring to front, send to back</dd>
           <dt><kbd>Delete</kbd></dt><dd>Remove from the board</dd>
           <dt>Arrow keys</dt><dd>Nudge (with <kbd>Shift</kbd>: further)</dd>
         </dl>
@@ -1582,6 +1640,7 @@ const TONE_INK = ['r', 'o', 'g', 'b', 'v'];
 function zoneEl(z) {
   const e = el('div', 'zone' + (S.sel.has(z.id) ? ' sel' : '')); e.dataset.id = z.id;
   e.dataset.ink = z.ink || TONE_INK[z.tone || 0] || 'k';
+  if (z.sw && z.sw !== 'm') e.dataset.sw = z.sw;
   e.style.cssText = `left:${z.x}px;top:${z.y}px;width:${z.w}px;height:${z.h}px`;
   for (const side of ['t', 'r', 'b', 'l']) e.appendChild(el('div', 'edge ' + side));
   e.appendChild(el('div', 'resize'));
@@ -1607,6 +1666,10 @@ function cardEl(c) {
   e.dataset.id = c.id; e.dataset.color = h ? h.color : (c.color || 'n');
   if (c.ink) e.dataset.ink = c.ink;
   if (c.size && c.size !== 'm') e.dataset.size = c.size;
+  if (c.bold) e.dataset.bold = '1';
+  if (c.italic) e.dataset.italic = '1';
+  if (c.align && c.align !== 'left') e.dataset.align = c.align;
+  if (c.frame === false) e.dataset.frame = 'off';
   e.style.left = c.x + 'px'; e.style.top = c.y + 'px';
   if (c.w) { e.style.width = c.w + 'px'; e.style.maxWidth = 'none'; }
   const edited = h && c.text != null && c.text !== h.text;
@@ -1790,51 +1853,74 @@ function selectCard(id) { setSel([id]); }
 function selectAll() { const b = board(); setSel([...b.cards.map(c => c.id), ...b.zones.map(z => z.id)]); }
 function selectedCards() { const b = board(); return b ? b.cards.filter(c => S.sel.has(c.id)) : []; }
 function selectedZones() { const b = board(); return b ? b.zones.filter(z => S.sel.has(z.id)) : []; }
+/* The style panel sits at the left of the board, like Excalidraw's, and shows what fits the selection. */
 function placeCardBar() {
-  const bar = $('#cardBar');
-  const cards = boardEl.offsetParent === null ? [] : selectedCards().filter(c => !c.img);
-  const zones = boardEl.offsetParent === null ? [] : selectedZones();
-  const els = cards.map(c => world.querySelector(`.card[data-id="${c.id}"]`)).concat(zones.map(z => world.querySelector(`.zone[data-id="${z.id}"]`))).filter(Boolean);
-  if (!els.length || (drag && drag.type === 'move' && drag.moved)) { bar.hidden = true; return; }
-  const rs = els.map(e => e.getBoundingClientRect()), br = boardEl.getBoundingClientRect();
-  const r = { left: Math.min(...rs.map(x => x.left)), top: Math.min(...rs.map(x => x.top)), right: Math.max(...rs.map(x => x.right)), bottom: Math.max(...rs.map(x => x.bottom)) };
-  if (r.bottom < br.top || r.top > br.bottom || r.right < br.left || r.left > br.right) { bar.hidden = true; return; }
-  bar.hidden = false;
-  const inks = new Set(cards.map(c => {
+  const panel = $('#props');
+  const on = boardEl.offsetParent !== null;
+  const cards = on ? selectedCards() : [], zones = on ? selectedZones() : [];
+  const text = cards.filter(c => !c.img);
+  if (!cards.length && !zones.length) { panel.hidden = true; return; }
+  panel.hidden = false;
+  $('#pColor').hidden = !(text.length || zones.length);
+  $('#pSize').hidden = $('#pText').hidden = $('#pFrame').hidden = !text.length;
+  $('#pStroke').hidden = !zones.length;
+  const one = (vals, v) => vals.size === 1 && vals.has(v);
+  const inks = new Set(text.map(c => {
     const h = c.hl ? hlById(c.hl) : null;
     return c.ink || ({ y: 'o', g: 'g', p: 'r', b: 'b' }[h ? h.color : c.color] || 'k');
   }).concat(zones.map(z => z.ink || TONE_INK[z.tone || 0] || 'k')));
-  $$('.ink', bar).forEach(b => b.classList.toggle('on', inks.size === 1 && inks.has(b.dataset.ink)));
-  const sizes = new Set(cards.map(c => c.size || 'm'));
-  $$('.sz', bar).forEach(b => { b.hidden = !cards.length; b.classList.toggle('on', sizes.size === 1 && sizes.has(b.dataset.size)); });
-  $('#sizeSep').hidden = $('#sizeLab').hidden = !cards.length;
-  const w = bar.offsetWidth, bh = bar.offsetHeight;
-  let top = r.top - bh - 14; if (top < br.top + 58) top = r.bottom + 30;
-  bar.style.left = clamp(r.left, br.left + 8, br.right - w - 8) + 'px';
-  bar.style.top = top + 'px';
+  $$('#props .ink').forEach(b => b.classList.toggle('on', one(inks, b.dataset.ink)));
+  const sizes = new Set(text.map(c => c.size || 'm'));
+  $$('#props [data-size]').forEach(b => b.classList.toggle('on', one(sizes, b.dataset.size)));
+  $('#props [data-act="bold"]').classList.toggle('on', text.length > 0 && text.every(c => c.bold));
+  $('#props [data-act="italic"]').classList.toggle('on', text.length > 0 && text.every(c => c.italic));
+  const aligns = new Set(text.map(c => c.align || 'left'));
+  $$('#props [data-align]').forEach(b => b.classList.toggle('on', one(aligns, b.dataset.align)));
+  const frames = new Set(text.map(c => (c.frame === false ? 'off' : 'on')));
+  $$('#props [data-frame]').forEach(b => b.classList.toggle('on', one(frames, b.dataset.frame)));
+  const sws = new Set(zones.map(z => z.sw || 'm'));
+  $$('#props [data-sw]').forEach(b => b.classList.toggle('on', one(sws, b.dataset.sw)));
 }
-$('#cardBar').addEventListener('click', e => {
-  const sz = e.target.closest('.sz');
-  if (sz) {
-    for (const c of selectedCards()) {
-      c.size = sz.dataset.size === 'm' ? undefined : sz.dataset.size;
-      const ce = world.querySelector(`.card[data-id="${c.id}"]`);
-      if (ce) { if (c.size) ce.dataset.size = c.size; else delete ce.dataset.size; }
-    }
-    saveBoard(); drawLinks(); placeCardBar(); return;
-  }
-  const b = e.target.closest('.ink'); if (!b) return;
-  MM.colors.clear();
-  for (const c of selectedCards()) {
-    c.ink = b.dataset.ink || null;
-    const ce = world.querySelector(`.card[data-id="${c.id}"]`);
-    if (ce) { if (c.ink) ce.dataset.ink = c.ink; else delete ce.dataset.ink; }
-  }
-  for (const z of selectedZones()) {
-    z.ink = b.dataset.ink;
-    const ze = world.querySelector(`.zone[data-id="${z.id}"]`); if (ze) ze.dataset.ink = z.ink;
-  }
-  saveBoard(); placeCardBar();
+function reorderSelection(where) {
+  const b = board(); const sel = S.sel;
+  const split = arr => [arr.filter(x => !sel.has(x.id)), arr.filter(x => sel.has(x.id))];
+  const [cr, cs] = split(b.cards), [zr, zs] = split(b.zones);
+  b.cards = where === 'front' ? cr.concat(cs) : cs.concat(cr);
+  b.zones = where === 'front' ? zr.concat(zs) : zs.concat(zr);
+}
+function styleSelection(change) {
+  const text = selectedCards().filter(c => !c.img), zones = selectedZones();
+  if (!text.length && !zones.length && !change.layer) return;
+  if ('ink' in change) { text.forEach(c => { c.ink = change.ink; }); zones.forEach(z => { z.ink = change.ink; }); MM.colors.clear(); }
+  if ('size' in change) text.forEach(c => { c.size = change.size === 'm' ? undefined : change.size; });
+  if ('bold' in change) { const v = change.bold === 'toggle' ? !text.every(c => c.bold) : change.bold; text.forEach(c => { c.bold = v || undefined; }); }
+  if ('italic' in change) { const v = change.italic === 'toggle' ? !text.every(c => c.italic) : change.italic; text.forEach(c => { c.italic = v || undefined; }); }
+  if ('align' in change) text.forEach(c => { c.align = change.align === 'left' ? undefined : change.align; });
+  if ('frame' in change) text.forEach(c => { c.frame = change.frame === 'off' ? false : undefined; });
+  if ('sw' in change) zones.forEach(z => { z.sw = change.sw === 'm' ? undefined : change.sw; });
+  if (change.layer) reorderSelection(change.layer);
+  saveBoard(); renderBoard();
+}
+$('#props').addEventListener('click', e => {
+  const btn = e.target.closest('button'); if (!btn) return;
+  const d = btn.dataset;
+  if (btn.classList.contains('ink')) styleSelection({ ink: d.ink });
+  else if (d.size) styleSelection({ size: d.size });
+  else if (d.align) styleSelection({ align: d.align });
+  else if (d.frame) styleSelection({ frame: d.frame });
+  else if (d.sw) styleSelection({ sw: d.sw });
+  else if (d.act === 'bold' || d.act === 'italic') styleSelection({ [d.act]: 'toggle' });
+  else if (d.act === 'front' || d.act === 'back') styleSelection({ layer: d.act });
+  else if (d.act === 'dup') { if (copySelection()) pasteClip(null); }
+  else if (d.act === 'del') deleteSelection();
+});
+document.addEventListener('keydown', e => {
+  const typing = e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"]');
+  if (typing || !(e.ctrlKey || e.metaKey) || e.altKey || !S.sel.size) return;
+  if (!e.shiftKey && e.code === 'KeyB') { e.preventDefault(); styleSelection({ bold: 'toggle' }); }
+  else if (!e.shiftKey && e.code === 'KeyI') { e.preventDefault(); styleSelection({ italic: 'toggle' }); }
+  else if (e.shiftKey && e.code === 'BracketRight') { e.preventDefault(); styleSelection({ layer: 'front' }); }
+  else if (e.shiftKey && e.code === 'BracketLeft') { e.preventDefault(); styleSelection({ layer: 'back' }); }
 });
 addEventListener('resize', () => placeCardBar());
 let boardBox = null;
@@ -1869,7 +1955,6 @@ function placeHighlight(hid, wx, wy) {
 }
 function editNote(id) {
   const t = world.querySelector(`.card[data-id="${id}"] .card-text`); if (!t) return;
-  $('#cardBar').hidden = true;
   t.contentEditable = 'true'; t.focus();
   const r = document.createRange(); r.selectNodeContents(t); r.collapse(false);
   const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
@@ -1936,8 +2021,7 @@ function startMove(e) {
   const cardIds = new Set(b.cards.filter(c => S.sel.has(c.id)).map(c => c.id));
   const zones = b.zones.filter(z => S.sel.has(z.id));
   const moving = b.cards.filter(c => cardIds.has(c.id));
-  b.cards = b.cards.filter(c => !cardIds.has(c.id)).concat(moving);
-  const items = moving.map(c => { const el2 = world.querySelector(`.card[data-id="${c.id}"]`); if (el2) world.appendChild(el2); return { o: c, x0: c.x, y0: c.y, el: el2, card: true }; })
+  const items = moving.map(c => ({ o: c, x0: c.x, y0: c.y, el: world.querySelector(`.card[data-id="${c.id}"]`), card: true }))
     .concat(zones.map(z => ({ o: z, x0: z.x, y0: z.y, el: world.querySelector(`.zone[data-id="${z.id}"]`) })));
   drag = { type: 'move', items, sx: e.clientX, sy: e.clientY, moved: false };
   boardEl.setPointerCapture(e.pointerId);
@@ -1945,7 +2029,7 @@ function startMove(e) {
 boardEl.addEventListener('pointerenter', () => { S.overBoard = true; });
 boardEl.addEventListener('pointerleave', () => { S.overBoard = false; });
 boardEl.addEventListener('pointerdown', e => {
-  if (e.target.closest('.canvas-ctl,#minimap')) return;
+  if (e.target.closest('.canvas-ctl,#minimap,#props')) return;
   hidePop($('#boardMenu'));
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
   const v = board().view;
@@ -2040,7 +2124,7 @@ boardEl.addEventListener('pointermove', e => {
     }
     case 'move': {
       if (!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 4) return;
-      if (!drag.moved) { drag.moved = true; drag.items.forEach(i => i.card && i.el && i.el.classList.add('lift')); $('#cardBar').hidden = true; }
+      if (!drag.moved) { drag.moved = true; drag.items.forEach(i => i.card && i.el && i.el.classList.add('lift')); }
       for (const i of drag.items) {
         i.o.x = Math.round(i.x0 + dx); i.o.y = Math.round(i.y0 + dy);
         if (i.el) { i.el.style.left = i.o.x + 'px'; i.el.style.top = i.o.y + 'px'; }
@@ -2138,11 +2222,11 @@ boardEl.addEventListener('dblclick', e => {
     if (under.closest('button,.cw-handle')) return;
     setSel([ce.dataset.id]); editNote(ce.dataset.id); return;
   }
-  if (S.tool === 'hand' || under.closest('.card,.canvas-ctl,#minimap,.edge,.to-content,button,input,textarea')) return;
+  if (S.tool === 'hand' || under.closest('.card,.canvas-ctl,#minimap,#props,.edge,.to-content,button,input,textarea')) return;
   const [wx, wy] = toWorld(e.clientX, e.clientY); addNoteAt(wx, wy);
 });
 boardEl.addEventListener('wheel', e => {
-  if (e.target.closest('textarea') && !e.ctrlKey) return;
+  if (e.target.closest('#props') || (e.target.closest('textarea') && !e.ctrlKey)) return;
   e.preventDefault();
   if (e.ctrlKey || e.metaKey) zoomBy(Math.exp(-e.deltaY * 0.0022), e.clientX, e.clientY);
   else { const v = board().view; const k = e.deltaMode === 1 ? 16 : 1; v.x -= (e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX) * k; if (!(e.shiftKey && !e.deltaX)) v.y -= e.deltaY * k; applyView(); saveView(); }
@@ -2250,7 +2334,8 @@ function boardMarkdown(b) {
     if (!h) {
       if (c.size === 'xl') return ['', `## ${text}`, ''];
       if (c.size === 'l') return ['', `### ${text}`, ''];
-      return [`- ${text.replace(/\n+/g, ' ')}`];
+      let t = text.replace(/\n+/g, ' '); if (c.bold) t = `**${t}**`; if (c.italic) t = `*${t}*`;
+      return [`- ${t}`];
     }
     const out = [`> ${text.replace(/\n+/g, ' ')}`, h.docId === b.docId ? `> — p. ${h.page}` : `> — ${docName(h)}, p. ${h.page}`];
     if (c.text != null && c.text !== h.text) out.push(`> (original: ${h.text.replace(/\n+/g, ' ')})`);
@@ -2340,7 +2425,7 @@ async function boardCanvas({ selectionOnly = true, background = true } = {}) {
   const items = [];
   for (const z of zones) {
     const e = world.querySelector(`.zone[data-id="${z.id}"]`); if (!e) continue;
-    items.push({ kind: 'zone', x: z.x, y: z.y, w: z.w, h: z.h, color: getComputedStyle(e, '::before').borderTopColor });
+    items.push({ kind: 'zone', x: z.x, y: z.y, w: z.w, h: z.h, color: getComputedStyle(e, '::before').borderTopColor, sw: parseFloat(getComputedStyle(e, '::before').borderTopWidth) || 2 });
   }
   for (const c of cards) {
     const e = world.querySelector(`.card[data-id="${c.id}"]`); if (!e) continue;
@@ -2391,7 +2476,7 @@ async function boardCanvas({ selectionOnly = true, background = true } = {}) {
   for (const i of items) {
     if (i.kind === 'zone') {
       ctx.strokeStyle = i.color;
-      ctx.lineWidth = 2; roundRectPath(ctx, i.x, i.y, i.w, i.h, 12); ctx.stroke();
+      ctx.lineWidth = i.sw; roundRectPath(ctx, i.x, i.y, i.w, i.h, 12); ctx.stroke();
       ctx.globalAlpha = 0.55; ctx.lineWidth = 1; roundRectPath(ctx, i.x + 1, i.y + 2, i.w + 1, i.h - 1, 13); ctx.stroke();
       ctx.globalAlpha = 1;
     }

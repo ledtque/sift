@@ -27,7 +27,7 @@ PDFs are copied into the browser when you add them, so deleting the original fil
 
 ## The board
 
-Every PDF has its own board. Cards show the full highlight; double-click a card to edit its text (the PDF keeps the original), and drag the handle on its right edge to change its width. The bar above a selected card sets its color and text size.
+Every PDF has its own board. Cards show the full highlight; double-click a card to edit its text (the PDF keeps the original), and drag the handle on its right edge to change its width. Selecting something opens the style panel on the left of the board: color, font size, bold and italic, alignment, frame on or off, stroke width for rectangles, layer order, duplicate and delete.
 
 **Images:** paste a screenshot (Ctrl+V), drop image files onto the board, or press **I**. Drag the handle on an image's right edge to resize it. Images are part of the automatic backup and the backup file.
 
@@ -47,6 +47,8 @@ Every PDF has its own board. Cards show the full highlight; double-click a card 
 | Shift + click | Add to or remove from the selection |
 | Ctrl+C / Ctrl+X / Ctrl+V | Copy, cut, paste (pasting text makes a note) |
 | Ctrl+D | Duplicate |
+| Ctrl+B / Ctrl+I | Bold, italic |
+| Ctrl+Shift+] / Ctrl+Shift+[ | Bring to front, send to back |
 | Delete | Remove from the board (highlights stay in the PDF) |
 | Ctrl+Z / Ctrl+Shift+Z | Undo / redo |
 | Ctrl+= / Ctrl+- / Ctrl+0 | Zoom in, out, 100% |
