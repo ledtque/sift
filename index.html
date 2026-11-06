@@ -461,6 +461,21 @@ svg.i.s{width:16px;height:16px}
 .lib-search input:focus{outline:none}
 .lib-search:focus-within{border-color:var(--accent)}
 
+/* ---------- images ---------- */
+.card.img-card{padding:0;border-radius:7px}
+.img-card img{display:block;width:100%;height:auto;border-radius:7px;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;pointer-events:none;background:var(--bg-soft);box-shadow:0 0 0 1px var(--line)}
+.img-card.img-missing img{min-height:80px}
+.img-card.img-missing::after{content:"Image not found";position:absolute;inset:0;display:grid;place-items:center;font-size:12px;color:var(--faint)}
+.card.img-card.sel{outline-offset:4px}
+
+/* ---------- minimap ---------- */
+.minimap{position:absolute;right:12px;bottom:12px;width:200px;height:136px;background:var(--island);border-radius:9px;box-shadow:var(--island-shadow);z-index:4;overflow:hidden;color:var(--muted)}
+.minimap canvas{display:block;width:100%;height:100%;cursor:pointer;touch-action:none}
+.mm-toggle{height:36px;min-width:36px;border:0;background:transparent;color:var(--muted);border-radius:8px;cursor:pointer;display:grid;place-items:center;padding:0}
+.mm-toggle:hover{background:var(--hover);color:var(--fg)}
+.mm-toggle[aria-pressed="true"]{color:var(--accent)}
+.canvas-ctl .mm-toggle{border-right:1px solid var(--line);border-radius:8px 0 0 8px}
+
 /* ---------- narrow ---------- */
 @media (max-width:899px){
   #app,#app.lib-hidden{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"main" "tabs"}
@@ -502,6 +517,8 @@ svg.i.s{width:16px;height:16px}
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5 16 16"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16.5l-5-5L6 20"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></symbol>
   <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></symbol>
 </svg>
 
@@ -565,6 +582,8 @@ svg.i.s{width:16px;height:16px}
           <button class="tool" data-tool="select" type="button" title="Select and move — V" aria-label="Select tool" aria-pressed="true"><svg class="i s"><use href="#i-pointer"/></svg><kbd>V</kbd></button>
           <button class="tool" data-tool="note" type="button" title="Note: click to write — T" aria-label="Note tool"><svg class="i s"><use href="#i-text"/></svg><kbd>T</kbd></button>
           <button class="tool" data-tool="group" type="button" title="Rectangle: drag to draw — R" aria-label="Rectangle tool"><svg class="i s"><use href="#i-rect"/></svg><kbd>R</kbd></button>
+          <button id="imgBtn" class="tool" type="button" title="Image: add from your computer — I. You can also paste or drop images." aria-label="Add an image"><svg class="i s"><use href="#i-image"/></svg><kbd>I</kbd></button>
+          <input id="imgIn" type="file" accept="image/*" multiple hidden>
         </div>
         <span class="spacer"></span>
         <button id="focusBtn" class="icon-btn island-icon" type="button" aria-label="Focus on the board" title="Focus on the board (F)"><svg class="i s"><use href="#i-expand"/></svg></button>
@@ -576,8 +595,10 @@ svg.i.s{width:16px;height:16px}
           <button id="bIn" type="button" aria-label="Zoom in">+</button>
           <button id="bFit" class="lbl" type="button" title="Fit everything">100%</button>
           <button id="bOut" type="button" aria-label="Zoom out">−</button>
+          <button id="mmToggle" class="mm-toggle" type="button" title="Minimap — M" aria-label="Show or hide the minimap" aria-pressed="true"><svg class="i s"><use href="#i-map"/></svg></button>
         </div>
         <div id="boardHint"></div>
+        <div id="minimap" class="minimap" hidden><canvas id="mmCanvas" aria-label="Minimap: click or drag to move around the board"></canvas></div>
         <button id="toContent" class="island-btn to-content" type="button" hidden>Scroll back to content</button>
         <div id="boardFind" class="board-find" hidden role="search">
           <svg class="i s" aria-hidden="true"><use href="#i-search"/></svg>
@@ -697,6 +718,7 @@ svg.i.s{width:16px;height:16px}
           <dt><kbd>H</kbd> or hold <kbd>Space</kbd></dt><dd>Move around</dd>
           <dt><kbd>T</kbd></dt><dd>Note</dd>
           <dt><kbd>R</kbd></dt><dd>Rectangle</dd>
+          <dt><kbd>I</kbd></dt><dd>Add an image (or paste / drop one)</dd>
           <dt>Double-click</dt><dd>Edit a card, or add a note</dd>
         </dl>
       </section>
@@ -719,6 +741,7 @@ svg.i.s{width:16px;height:16px}
           <dt><kbd>Ctrl</kbd> <kbd>+</kbd> / <kbd>−</kbd></dt><dd>Zoom in, out</dd>
           <dt><kbd>Ctrl</kbd> <kbd>0</kbd></dt><dd>Zoom to 100%</dd>
           <dt><kbd>Shift</kbd> <kbd>1</kbd></dt><dd>Fit everything</dd>
+          <dt><kbd>M</kbd></dt><dd>Show or hide the minimap</dd>
           <dt><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>E</kbd></dt><dd>Export as PNG</dd>
           <dt><kbd>Shift</kbd> <kbd>Alt</kbd> <kbd>C</kbd></dt><dd>Copy as PNG</dd>
           <dt><kbd>Esc</kbd></dt><dd>Clear selection</dd>
@@ -728,7 +751,7 @@ svg.i.s{width:16px;height:16px}
   </div>
 </div>
 
-<div id="dropCover" hidden><div>Drop PDFs to add them</div></div>
+<div id="dropCover" hidden><div>Drop PDFs to read them, or images to put them on the board</div></div>
 <div id="toasts" aria-live="polite"></div>
 
 <script src="lib/pdf.min.js"></script>
@@ -761,10 +784,10 @@ const DB = {
   open() {
     return new Promise(res => {
       try {
-        const r = indexedDB.open('sift-reader', 2);
+        const r = indexedDB.open('sift-reader', 3);
         r.onupgradeneeded = () => {
           const d = r.result;
-          for (const [n, k] of [['docs', 'id'], ['files', 'k'], ['hls', 'id'], ['boards', 'id'], ['meta', 'k']])
+          for (const [n, k] of [['docs', 'id'], ['files', 'k'], ['hls', 'id'], ['boards', 'id'], ['meta', 'k'], ['images', 'k']])
             if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, { keyPath: k });
         };
         r.onsuccess = () => { this.db = r.result; res(true); };
@@ -950,7 +973,16 @@ addEventListener('dragleave', () => { dragDepth = Math.max(0, dragDepth - 1); if
 addEventListener('dragover', e => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) e.preventDefault(); });
 addEventListener('drop', e => {
   if (!e.dataTransfer || !e.dataTransfer.files.length) return;
-  e.preventDefault(); dragDepth = 0; $('#dropCover').hidden = true; addFiles(e.dataTransfer.files);
+  e.preventDefault(); dragDepth = 0; $('#dropCover').hidden = true;
+  const files = [...e.dataTransfer.files];
+  const images = files.filter(f => /^image\//.test(f.type)), rest = files.filter(f => !/^image\//.test(f.type));
+  if (images.length) {
+    const r = boardEl.getBoundingClientRect();
+    const onBoard = boardEl.offsetParent && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    if (!onBoard && NARROW()) setView('board');
+    addImages(images, onBoard ? toWorld(e.clientX, e.clientY) : null).then(n => { if (n && !onBoard && !NARROW()) toast(`${n === 1 ? 'Image' : n + ' images'} added to the board.`, 1800); });
+  }
+  if (rest.length) addFiles(rest);
 });
 
 /* ---------- reader ---------- */
@@ -1527,6 +1559,7 @@ function migrateGroups(b) {
   if (changed) DB.put('boards', b);
 }
 function cardEl(c) {
+  if (c.img) return imageCardEl(c);
   const h = c.hl ? hlById(c.hl) : null;
   if (c.hl && !h) return null;
   const e = el('div', 'card' + (S.sel.has(c.id) ? ' sel' : ''));
@@ -1570,6 +1603,7 @@ function renderBoard() {
   migrateGroups(b);
   placeStrays();
   hist(b);
+  MM.colors.clear();
   $$('.zone,.card', world).forEach(x => x.remove());
   b.cards = b.cards.filter(c => !c.hl || hlById(c.hl));
   for (const z of b.zones) world.appendChild(zoneEl(z));
@@ -1587,7 +1621,12 @@ function refreshCardsFor(hid) {
   }
   requestAnimationFrame(drawLinks);
 }
-function cardSize(id) { const e = world.querySelector(`.card[data-id="${id}"]`); return e ? { w: e.offsetWidth, h: e.offsetHeight } : { w: CARD_W, h: 110 }; }
+function cardSize(id) {
+  const e = world.querySelector(`.card[data-id="${id}"]`);
+  if (e) return { w: e.offsetWidth, h: e.offsetHeight };
+  const b = board(), c = b && b.cards.find(x => x.id === id);
+  return c && c.img ? { w: c.w || 300, h: Math.round((c.w || 300) * (c.ar || 0.75)) } : { w: CARD_W, h: 110 };
+}
 function inZone(c, z) { const s = cardSize(c.id); const cx = c.x + s.w / 2, cy = c.y + s.h / 2; return cx >= z.x && cx <= z.x + z.w && cy >= z.y && cy <= z.y + z.h; }
 function updateCounts() {
   const b = board();
@@ -1618,6 +1657,7 @@ function drawLinks(tmp) {
   }
   if (tmp) parts.push(`<path class="lk-tmp" d="M${tmp[0]},${tmp[1]} L${tmp[2]},${tmp[3]}"/>`);
   linksSvg.innerHTML = parts.join('');
+  scheduleMinimap();
 }
 function applyView() {
   const v = board().view;
@@ -1627,6 +1667,7 @@ function applyView() {
   $('#bFit').textContent = Math.round(v.z * 100) + '%';
   placeCardBar();
   if (!contentRaf) contentRaf = requestAnimationFrame(checkContentInView);
+  scheduleMinimap();
 }
 /* Like Excalidraw: when nothing on the board is on screen, offer a way back. */
 let contentRaf = 0;
@@ -1683,7 +1724,7 @@ function fitBoard() {
   const x1 = Math.max(...items.map(i => i[2])), y1 = Math.max(...items.map(i => i[3]));
   const r = boardEl.getBoundingClientRect();
   const trayW = 0;
-  const W = r.width - trayW - 60, H = r.height - 60 - 56;
+  const W = r.width - trayW - 60, H = r.height - 60 - 56 - (!$('#minimap').hidden ? 90 : 0);
   const z = clamp(Math.min(W / (x1 - x0), H / (y1 - y0)), 0.2, 1.2);
   animateView({ z, x: trayW + 30 + (W - (x1 - x0) * z) / 2 - x0 * z, y: 86 + (H - (y1 - y0) * z) / 2 - y0 * z });
 }
@@ -1710,7 +1751,7 @@ function selectedCards() { const b = board(); return b ? b.cards.filter(c => S.s
 function selectedZones() { const b = board(); return b ? b.zones.filter(z => S.sel.has(z.id)) : []; }
 function placeCardBar() {
   const bar = $('#cardBar');
-  const cards = boardEl.offsetParent === null ? [] : selectedCards();
+  const cards = boardEl.offsetParent === null ? [] : selectedCards().filter(c => !c.img);
   const zones = boardEl.offsetParent === null ? [] : selectedZones();
   const els = cards.map(c => world.querySelector(`.card[data-id="${c.id}"]`)).concat(zones.map(z => world.querySelector(`.zone[data-id="${z.id}"]`))).filter(Boolean);
   if (!els.length || (drag && drag.type === 'move' && drag.moved)) { bar.hidden = true; return; }
@@ -1742,6 +1783,7 @@ $('#cardBar').addEventListener('click', e => {
     saveBoard(); drawLinks(); placeCardBar(); return;
   }
   const b = e.target.closest('.ink'); if (!b) return;
+  MM.colors.clear();
   for (const c of selectedCards()) {
     c.ink = b.dataset.ink || null;
     const ce = world.querySelector(`.card[data-id="${c.id}"]`);
@@ -1827,7 +1869,7 @@ function setTool(t) {
   S.tool = t; boardEl.dataset.tool = t;
   $$('.tool').forEach(b => b.setAttribute('aria-pressed', b.dataset.tool === t));
 }
-$('#tools').addEventListener('click', e => { const b = e.target.closest('.tool'); if (b) setTool(b.dataset.tool); });
+$('#tools').addEventListener('click', e => { const b = e.target.closest('.tool'); if (b && b.dataset.tool) setTool(b.dataset.tool); });
 
 /* ---------- undo / redo ---------- */
 const HIST = {};
@@ -1862,7 +1904,7 @@ function startMove(e) {
 boardEl.addEventListener('pointerenter', () => { S.overBoard = true; });
 boardEl.addEventListener('pointerleave', () => { S.overBoard = false; });
 boardEl.addEventListener('pointerdown', e => {
-  if (e.target.closest('.canvas-ctl')) return;
+  if (e.target.closest('.canvas-ctl,#minimap')) return;
   hidePop($('#boardMenu'));
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
   const v = board().view;
@@ -1965,7 +2007,7 @@ boardEl.addEventListener('pointermove', e => {
       drawLinks(); break;
     }
     case 'cwidth': {
-      drag.c.w = Math.round(clamp(drag.w0 + dx, 90, 720));
+      drag.c.w = Math.round(clamp(drag.w0 + dx, drag.c.img ? 40 : 90, drag.c.img ? 2400 : 720));
       drag.el.style.width = drag.c.w + 'px'; drag.el.style.maxWidth = 'none';
       drawLinks(); placeCardBar(); break;
     }
@@ -2055,7 +2097,7 @@ boardEl.addEventListener('dblclick', e => {
     if (under.closest('button,.cw-handle')) return;
     setSel([ce.dataset.id]); editNote(ce.dataset.id); return;
   }
-  if (S.tool === 'hand' || under.closest('.card,.canvas-ctl,.edge,.to-content,button,input,textarea')) return;
+  if (S.tool === 'hand' || under.closest('.card,.canvas-ctl,#minimap,.edge,.to-content,button,input,textarea')) return;
   const [wx, wy] = toWorld(e.clientX, e.clientY); addNoteAt(wx, wy);
 });
 boardEl.addEventListener('wheel', e => {
@@ -2093,6 +2135,7 @@ document.addEventListener('keydown', e => {
     return;
   }
   if (k === 'f' && $('#selPop').hidden) { e.preventDefault(); setFocus(!$('#app').classList.contains('focus')); return; }
+  if (k === 'i' && $('#selPop').hidden) { e.preventDefault(); $('#imgIn').click(); return; }
   if ($('#selPop').hidden && TOOL_KEYS[k]) { setTool(TOOL_KEYS[k]); return; }
   if (e.key === 'Delete' || e.key === 'Backspace') {
     if (S.selLink) { const b = board(); b.links = b.links.filter(l => l.id !== S.selLink); S.selLink = null; saveBoard(); drawLinks(); e.preventDefault(); }
@@ -2159,6 +2202,7 @@ function boardMarkdown(b) {
   const inside = (c, z) => { const [x, y] = center(c); return x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h; };
   const order = (a, c) => (Math.abs(a.y - c.y) < 40 ? a.x - c.x : a.y - c.y);
   const fmt = c => {
+    if (c.img) return ['*[image]*', ''];
     const h = c.hl && hlById(c.hl);
     const text = (c.text != null ? c.text : (h ? h.text : '')).trim();
     if (!text) return [];
@@ -2259,6 +2303,7 @@ async function boardCanvas({ selectionOnly = true, background = true } = {}) {
   }
   for (const c of cards) {
     const e = world.querySelector(`.card[data-id="${c.id}"]`); if (!e) continue;
+    if (c.img) { const im = e.querySelector('img'); if (im && im.complete && im.naturalWidth) items.push({ kind: 'image', ...toW(im.getBoundingClientRect()), el: im }); continue; }
     const t = e.querySelector('.card-text'); const cs = getComputedStyle(t);
     const box = toW(t.getBoundingClientRect());
     const card = { kind: 'card', ...box, radius: parseFloat(cs.borderTopLeftRadius) || 9, border: parseFloat(cs.borderTopWidth) || 1.75,
@@ -2311,6 +2356,11 @@ async function boardCanvas({ selectionOnly = true, background = true } = {}) {
     }
   }
   for (const i of items) {
+    if (i.kind === 'image') {
+      ctx.save(); roundRectPath(ctx, i.x, i.y, i.w, i.h, 6); ctx.clip();
+      try { ctx.drawImage(i.el, i.x, i.y, i.w, i.h); } catch (e) {}
+      ctx.restore(); continue;
+    }
     if (i.kind !== 'card') continue;
     const inset = i.border / 2;
     roundRectPath(ctx, i.x + inset, i.y + inset, i.w - i.border, i.h - i.border, i.radius);
@@ -2368,6 +2418,184 @@ document.addEventListener('keydown', e => {
   if (!typing && e.key === '?' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); $('#helpModal').hidden ? openHelp() : closeHelp(); }
 });
 
+/* ---------- images on the board ----------
+   Images are stored once in IndexedDB ("images") and cards point at them, so copies of a card share
+   one file. Paste a screenshot, drop image files, or use the image button (I). */
+const imgURLs = new Map();
+async function imageURL(id) {
+  if (imgURLs.has(id)) return imgURLs.get(id);
+  const rec = await DB.get('images', id); if (!rec || !rec.blob) return null;
+  const u = URL.createObjectURL(rec.blob); imgURLs.set(id, u); return u;
+}
+async function imageBlob(id) { const rec = await DB.get('images', id); return (rec && rec.blob) || null; }
+function imageIdsInUse() { return [...new Set(S.boards.flatMap(b => b.cards.filter(c => c.img).map(c => c.img)))]; }
+function loadImg(src) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; }); }
+/* Very large images are scaled down so a library of screenshots doesn't fill the browser's storage. */
+async function prepareImage(file) {
+  const url = URL.createObjectURL(file);
+  let img; try { img = await loadImg(url); } catch (e) { URL.revokeObjectURL(url); return null; }
+  let w = img.naturalWidth || 400, h = img.naturalHeight || 300, blob = file;
+  const MAX = 2400, keep = /^image\/(png|jpeg|webp|gif)$/.test(file.type);
+  if (!keep || Math.max(w, h) > MAX || file.size > 4e6) {
+    const k = Math.min(1, MAX / Math.max(w, h));
+    const cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(w * k)); cv.height = Math.max(1, Math.round(h * k));
+    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    const type = file.type === 'image/png' && file.size < 8e6 ? 'image/png' : 'image/webp';
+    blob = (await new Promise(r => cv.toBlob(r, type, 0.9))) || file;
+    w = cv.width; h = cv.height;
+  }
+  URL.revokeObjectURL(url);
+  return { blob, w, h };
+}
+async function addImages(files, at) {
+  const list = [...files].filter(f => /^image\//.test(f.type)); if (!list.length) return 0;
+  const b = board(); if (!b) return 0;
+  let [wx, wy] = at || visibleCenter();
+  const ids = [];
+  const freeSpot = (W, H) => {
+    const vis = visibleWorldRect(b); if (!vis) return null;
+    for (let py = vis.y0; py + H <= vis.y1; py += 30)
+      for (let px = vis.x0; px + W <= vis.x1; px += 40) if (!overlaps(px, py, W, H, b)) return [px, py];
+    return null;
+  };
+  for (const f of list) {
+    const p = await prepareImage(f);
+    if (!p) { toast(`Couldn't open ${f.name ? '"' + f.name + '"' : 'that image'}.`); continue; }
+    const id = uid();
+    if ((await DB.put('images', { k: id, blob: p.blob, w: p.w, h: p.h })) == null && S.dbOk) { toast('There is no room left to store this image.'); continue; }
+    imgURLs.set(id, URL.createObjectURL(p.blob));
+    const viewW = boardEl.offsetParent ? boardEl.clientWidth / b.view.z : 900;
+    // shown at its own size, but no wider than 420 px or most of the visible board
+    const w = Math.round(Math.max(60, Math.min(p.w / Math.min(2, window.devicePixelRatio || 1), 420, viewW * 0.6)));
+    const ar = p.h / p.w;
+    let x = wx - w / 2, y = wy - (w * ar) / 2;
+    if (!at) {
+      let spot = freeSpot(w, w * ar);
+      if (!spot) {
+        // no room on screen: put it under everything else, and the view follows it
+        const vis = visibleWorldRect(b);
+        const bottoms = b.cards.map(c => c.y + cardSize(c.id).h).concat(b.zones.map(z => z.y + z.h));
+        spot = [vis ? vis.x0 : x, (bottoms.length ? Math.max(...bottoms) : y) + 36];
+      }
+      [x, y] = spot;
+    }
+    const c = { id: uid(), hl: null, img: id, ar: +ar.toFixed(4), w, x: Math.round(x), y: Math.round(y) };
+    b.cards.push(c); ids.push(c.id);
+    if (at) { wx += 28; wy += 28; }
+  }
+  if (!ids.length) return 0;
+  saveBoard(); renderBoard();
+  requestAnimationFrame(() => { setSel(ids); revealCard(ids[ids.length - 1]); });
+  return ids.length;
+}
+function imageCardEl(c) {
+  const e = el('div', 'card img-card' + (S.sel.has(c.id) ? ' sel' : ''));
+  e.dataset.id = c.id; e.dataset.color = 'n';
+  e.style.left = c.x + 'px'; e.style.top = c.y + 'px';
+  e.style.width = (c.w || 300) + 'px'; e.style.maxWidth = 'none';
+  const im = document.createElement('img');
+  im.alt = ''; im.draggable = false; im.decoding = 'async';
+  im.style.aspectRatio = `1 / ${c.ar || 0.75}`;
+  const u = imgURLs.get(c.img);
+  if (u) im.src = u;
+  else imageURL(c.img).then(x => { if (x) im.src = x; else e.classList.add('img-missing'); });
+  e.appendChild(im);
+  const m = el('div', 'card-meta');
+  m.appendChild(el('span', 'lbl', 'Image'));
+  const hd = el('button', 'handle'); hd.type = 'button'; hd.title = 'Drag onto another card to connect them'; hd.setAttribute('aria-label', 'Connect to another card');
+  const rm = el('button', 'crm icon-btn', '×'); rm.type = 'button'; rm.setAttribute('aria-label', 'Delete image'); rm.title = 'Delete image';
+  m.append(hd, rm); e.appendChild(m);
+  const wh = el('div', 'cw-handle'); wh.title = 'Drag to change the size'; e.appendChild(wh);
+  return e;
+}
+/* Images nothing points at any more (deleted cards from earlier visits) are cleared on start. */
+async function cleanImages() {
+  const used = new Set(imageIdsInUse());
+  for (const k of await DB.keys('images')) if (!used.has(k)) DB.req('images', 'readwrite', st => st.delete(k));
+}
+$('#imgBtn').onclick = () => $('#imgIn').click();
+$('#imgIn').addEventListener('change', e => { const f = [...e.target.files]; e.target.value = ''; if (f.length) { if (NARROW()) setView('board'); addImages(f, null); } });
+
+/* ---------- minimap ---------- */
+const MM = { on: LS.get('minimap', true), raf: 0, t: null, colors: new Map() };
+function scheduleMinimap() { if (!MM.raf) MM.raf = requestAnimationFrame(drawMinimap); }
+function mmColor(c) {
+  if (MM.colors.has(c.id)) return MM.colors.get(c.id);
+  const e = world.querySelector(`.card[data-id="${c.id}"]`);
+  const t = e && (e.querySelector('.card-text') || e.querySelector('img'));
+  let col = null;
+  if (t) col = t.tagName === 'IMG' ? 'img' : getComputedStyle(t).borderTopColor;
+  if (col) MM.colors.set(c.id, col);
+  return col || '#888';
+}
+function drawMinimap() {
+  MM.raf = 0;
+  const wrap = $('#minimap'), cv = $('#mmCanvas'), b = board();
+  $('#mmToggle').setAttribute('aria-pressed', String(MM.on));
+  const hasContent = b && (b.cards.length || b.zones.length);
+  const show = MM.on && hasContent && boardEl.offsetParent && !NARROW();
+  wrap.hidden = !show;
+  $('#mmToggle').hidden = !hasContent || NARROW();
+  if (!show) return;
+  const W = wrap.clientWidth, H = wrap.clientHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
+  if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+  const v = b.view, bw = boardEl.clientWidth, bh = boardEl.clientHeight;
+  const view = { x0: -v.x / v.z, y0: -v.y / v.z, x1: (bw - v.x) / v.z, y1: (bh - v.y) / v.z };
+  const rects = b.cards.map(c => { const s = cardSize(c.id); return { c, x: c.x, y: c.y, w: s.w, h: s.h }; });
+  const zr = b.zones.map(z => ({ z, x: z.x, y: z.y, w: z.w, h: z.h }));
+  const all = rects.concat(zr);
+  let x0 = Math.min(view.x0, ...all.map(r => r.x)), y0 = Math.min(view.y0, ...all.map(r => r.y));
+  let x1 = Math.max(view.x1, ...all.map(r => r.x + r.w)), y1 = Math.max(view.y1, ...all.map(r => r.y + r.h));
+  const padX = (x1 - x0) * 0.06, padY = (y1 - y0) * 0.06; x0 -= padX; x1 += padX; y0 -= padY; y1 += padY;
+  const k = Math.min(W / (x1 - x0), H / (y1 - y0));
+  const ox = x0 - (W / k - (x1 - x0)) / 2, oy = y0 - (H / k - (y1 - y0)) / 2;
+  MM.t = { k, ox, oy };
+  const px = x => (x - ox) * k, py = y => (y - oy) * k;
+  const cs = getComputedStyle(wrap);
+  for (const r of zr) {
+    const col = getComputedStyle(world.querySelector(`.zone[data-id="${r.z.id}"]`) || wrap, '::before').borderTopColor || cs.color;
+    ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.globalAlpha = 0.8;
+    ctx.strokeRect(px(r.x) + 0.5, py(r.y) + 0.5, Math.max(2, r.w * k), Math.max(2, r.h * k));
+  }
+  for (const r of rects) {
+    const col = mmColor(r.c);
+    ctx.globalAlpha = col === 'img' ? 0.35 : 0.75;
+    ctx.fillStyle = col === 'img' ? cs.color : col;
+    ctx.fillRect(px(r.x), py(r.y), Math.max(2, r.w * k), Math.max(1.5, r.h * k));
+  }
+  ctx.globalAlpha = 1;
+  const accent = cs.getPropertyValue('--accent').trim() || '#6965db';
+  const vx = px(view.x0), vy = py(view.y0), vw = (view.x1 - view.x0) * k, vh = (view.y1 - view.y0) * k;
+  ctx.fillStyle = accent; ctx.globalAlpha = 0.1; ctx.fillRect(vx, vy, vw, vh);
+  ctx.globalAlpha = 1; ctx.strokeStyle = accent; ctx.lineWidth = 1.5;
+  ctx.strokeRect(Math.max(0.75, vx), Math.max(0.75, vy), Math.min(W - 1.5, vw), Math.min(H - 1.5, vh));
+}
+function minimapGo(e, animate) {
+  if (!MM.t) return;
+  const r = $('#mmCanvas').getBoundingClientRect(), b = board(), v = b.view;
+  const wx = (e.clientX - r.left) / MM.t.k + MM.t.ox, wy = (e.clientY - r.top) / MM.t.k + MM.t.oy;
+  const target = { z: v.z, x: boardEl.clientWidth / 2 - wx * v.z, y: boardEl.clientHeight / 2 - wy * v.z };
+  if (animate) animateView(target); else { b.view = target; applyView(); saveView(); }
+}
+$('#mmCanvas').addEventListener('pointerdown', e => {
+  e.preventDefault(); e.stopPropagation();
+  const cv = e.currentTarget; cv.setPointerCapture(e.pointerId);
+  // freeze the map while dragging, so the frame doesn't run away from the pointer
+  const frozen = MM.t; minimapGo(e, true);
+  const move = ev => { MM.t = frozen; minimapGo(ev, false); };
+  const up = () => { cv.removeEventListener('pointermove', move); cv.removeEventListener('pointerup', up); cv.removeEventListener('pointercancel', up); scheduleMinimap(); };
+  cv.addEventListener('pointermove', move); cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+});
+$('#mmCanvas').addEventListener('wheel', e => { e.stopPropagation(); }, { passive: true });
+$('#mmToggle').onclick = () => { MM.on = !MM.on; LS.set('minimap', MM.on); scheduleMinimap(); };
+document.addEventListener('keydown', e => {
+  const typing = e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"]');
+  if (typing || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key.toLowerCase() === 'm' && board() && (S.overBoard || $('#app').classList.contains('focus'))) { MM.on = !MM.on; LS.set('minimap', MM.on); scheduleMinimap(); }
+});
+
 /* ---------- copy, cut, paste, duplicate ---------- */
 S.clip = null; S.clipText = '';
 function copySelection() {
@@ -2416,6 +2644,13 @@ document.addEventListener('paste', e => {
   const typing = e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"]');
   if (typing || !$('#modal').hidden) return;
   const onBoard = S.overBoard || $('#app').classList.contains('focus') || (NARROW() && $('#app').dataset.view === 'board') || S.sel.size;
+  // a pasted screenshot or image always goes onto the board, even while reading
+  const pics = e.clipboardData ? [...e.clipboardData.files].filter(f => /^image\//.test(f.type)) : [];
+  if (pics.length) {
+    e.preventDefault();
+    addImages(pics, onBoard ? pointerWorld() : null).then(n => { if (n && !onBoard) toast('Image added to the board.', 1800); });
+    return;
+  }
   if (!onBoard) return;
   const text = (e.clipboardData && e.clipboardData.getData('text/plain')) || '';
   if (S.clip && (!text || text === S.clipText)) { e.preventDefault(); pasteClip(pointerWorld()); return; }
@@ -2638,6 +2873,17 @@ async function runBackup() {
       const blob = await blobFor(d.id); if (!blob) continue;
       await writeFile(pd, name, blob); BK.names.add(name);
     }
+    const imgs = imageIdsInUse();
+    if (imgs.length) {
+      const idir = await dir.getDirectoryHandle('images', { create: true });
+      if (!BK.imgNames) { BK.imgNames = new Set(); for await (const [name] of idir.entries()) BK.imgNames.add(name.replace(/\.[^.]+$/, '')); }
+      for (const id of imgs) {
+        if (BK.imgNames.has(id)) continue;
+        const blob = await imageBlob(id); if (!blob) continue;
+        const ext = ({ 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif' })[blob.type] || 'img';
+        await writeFile(idir, `${id}.${ext}`, blob); BK.imgNames.add(id);
+      }
+    }
     const json = JSON.stringify(backupData());
     await writeFile(dir, 'sift-data.json', json);
     const hist = await dir.getDirectoryHandle('history', { create: true });
@@ -2658,14 +2904,20 @@ async function readBackupFolder(dir) {
   if (!data || data.app !== 'sift-reader') return null;
   let pd = null; try { pd = await dir.getDirectoryHandle('pdfs'); } catch (e) {}
   const getPdf = async id => { if (!pd) return null; try { return await (await pd.getFileHandle(pdfName(id))).getFile(); } catch (e) { return null; } };
-  return { data, getPdf };
+  let idir = null, imap = null; try { idir = await dir.getDirectoryHandle('images'); } catch (e) {}
+  const getImage = async id => {
+    if (!idir) return null;
+    if (!imap) { imap = new Map(); for await (const [n, h] of idir.entries()) imap.set(n.replace(/\.[^.]+$/, ''), h); }
+    const h = imap.get(id); try { return h ? await h.getFile() : null; } catch (e) { return null; }
+  };
+  return { data, getPdf, getImage };
 }
 async function useFolder(dir, { restoreFirst = true } = {}) {
-  BK.handle = dir; BK.names = null;
+  BK.handle = dir; BK.names = null; BK.imgNames = null;
   await DB.put('meta', { k: 'backupDir', v: dir });
   if (restoreFirst) {
     const found = await readBackupFolder(dir);
-    if (found) await restoreData(found.data, found.getPdf, { quiet: true });
+    if (found) await restoreData(found.data, found.getPdf, { quiet: true, getImage: found.getImage });
   }
   BK.state = 'on'; renderBackupStatus();
   await runBackup();
@@ -2735,7 +2987,7 @@ function renderBackupStatus() {
 setInterval(renderBackupStatus, 30000);
 
 /* ---------- restore ---------- */
-async function restoreData(data, getPdf, { quiet = false } = {}) {
+async function restoreData(data, getPdf, { quiet = false, getImage = null } = {}) {
   if (!data || data.app !== 'sift-reader') { toast('That isn\'t a Sift backup.'); return; }
   BK.restoring = true;
   let nh = 0, nb = 0, nf = 0;
@@ -2762,6 +3014,14 @@ async function restoreData(data, getPdf, { quiet = false } = {}) {
       if (i >= 0) S.boards[i] = b; else { S.boards.push(b); nb++; }
       await DB.put('boards', b);
     }
+    if (getImage) {
+      const want = new Set((data.boards || []).flatMap(b => (b.cards || []).filter(c => c.img).map(c => c.img)));
+      for (const id of want) {
+        if (await DB.get('images', id)) continue;
+        const f = await getImage(id);
+        if (f) { await DB.put('images', { k: id, blob: new Blob([await f.arrayBuffer()], { type: f.type || 'image/png' }) }); imgURLs.delete(id); }
+      }
+    }
   } finally { BK.restoring = false; }
   splitBoardsByDoc();
   if (!board()) S.boardId = S.boards[0].id;
@@ -2776,7 +3036,7 @@ async function restoreFromFolder() {
   let dir; try { dir = await window.showDirectoryPicker({ id: 'sift-backup', mode: 'readwrite' }); } catch (e) { return; }
   const found = await readBackupFolder(dir);
   if (!found) { toast(`"${dir.name}" has no Sift backup in it. Pick the folder that contains sift-data.json.`, 4200); return; }
-  await restoreData(found.data, found.getPdf);
+  await restoreData(found.data, found.getPdf, { getImage: found.getImage });
   await useFolder(dir, { restoreFirst: false });
   closeModal();
 }
@@ -2785,7 +3045,9 @@ async function restoreFromFile(file) {
   try { data = JSON.parse(await file.text()); } catch (e) { toast('That isn\'t a Sift backup file.'); return; }
   const pdfs = data && data.pdfs || {};
   const getPdf = async id => pdfs[id] ? await (await fetch('data:application/pdf;base64,' + pdfs[id])).blob() : null;
-  await restoreData(data, getPdf);
+  const images = (data && data.images) || {};
+  const getImage = async id => images[id] ? await (await fetch(`data:${images[id].t || 'image/png'};base64,${images[id].d}`)).blob() : null;
+  await restoreData(data, getPdf, { getImage });
   closeModal();
 }
 
@@ -2800,6 +3062,12 @@ async function fullBackupBlob() {
   for (const d of S.docs) {
     const blob = await blobFor(d.id); if (!blob) continue;
     parts.push((first ? '' : ',') + JSON.stringify(d.id) + ':"' + await blobToBase64(blob) + '"'); first = false;
+  }
+  parts.push('},"images":{');
+  first = true;
+  for (const id of imageIdsInUse()) {
+    const blob = await imageBlob(id); if (!blob) continue;
+    parts.push((first ? '' : ',') + JSON.stringify(id) + ':' + JSON.stringify({ t: blob.type || 'image/png', d: await blobToBase64(blob) })); first = false;
   }
   parts.push('}}');
   return new Blob(parts, { type: 'application/json' });
@@ -2819,7 +3087,7 @@ $('#bkSave').onclick = async () => {
 $('#bkFile').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) restoreFromFile(f); });
 $('#bkPick').onclick = () => pickFolder();
 $('#bkResume').onclick = () => resumeBackup();
-$('#bkNow').onclick = () => { BK.names = null; runBackup().then(() => toast('Backed up.', 1600)); };
+$('#bkNow').onclick = () => { BK.names = null; BK.imgNames = null; runBackup().then(() => toast('Backed up.', 1600)); };
 $('#bkOff').onclick = async () => { BK.state = BK.supported ? 'off' : 'unsupported'; BK.handle = null; await DB.del('meta', 'backupDir'); renderBackupStatus(); toast('Automatic backup is off. Files already in the folder stay there.'); };
 $('#bkRestoreDir').onclick = () => restoreFromFolder();
 $('#bkChip').onclick = () => { if (BK.state === 'paused') resumeBackup(); else openModal(); };
@@ -2886,6 +3154,7 @@ async function init() {
   if (S.dbOk) {
     [S.docs, S.hls, S.boards] = await Promise.all([DB.all('docs'), DB.all('hls'), DB.all('boards')]);
     S.haveFile = new Set(await DB.keys('files'));
+    cleanImages();
     try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
   }
   $('#storeNote').textContent = S.dbOk
