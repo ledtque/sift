@@ -476,7 +476,7 @@ svg.i.s{width:16px;height:16px}
 .card.img-card.sel{outline-offset:4px}
 
 /* ---------- minimap ---------- */
-.minimap{position:absolute;right:12px;bottom:12px;width:200px;height:136px;background:var(--island);border-radius:9px;box-shadow:var(--island-shadow);z-index:4;overflow:hidden;color:var(--muted)}
+.minimap{position:absolute;right:12px;bottom:12px;width:168px;height:112px;background:var(--island);border-radius:9px;box-shadow:var(--island-shadow);z-index:4;overflow:hidden;color:var(--muted)}
 .minimap canvas{display:block;width:100%;height:100%;cursor:pointer;touch-action:none}
 .mm-toggle{height:36px;min-width:36px;border:0;background:transparent;color:var(--muted);border-radius:8px;cursor:pointer;display:grid;place-items:center;padding:0}
 .mm-toggle:hover{background:var(--hover);color:var(--fg)}
@@ -1828,7 +1828,7 @@ function fitBoard() {
   const x1 = Math.max(...items.map(i => i[2])), y1 = Math.max(...items.map(i => i[3]));
   const r = boardEl.getBoundingClientRect();
   const trayW = 0;
-  const W = r.width - trayW - 60, H = r.height - 60 - 56 - (!$('#minimap').hidden ? 90 : 0);
+  const W = r.width - trayW - 60, H = r.height - 60 - 56 - (!$('#minimap').hidden ? Math.max(0, $('#minimap').offsetHeight - 40) : 0);
   const z = clamp(Math.min(W / (x1 - x0), H / (y1 - y0)), 0.2, 1.2);
   animateView({ z, x: trayW + 30 + (W - (x1 - x0) * z) / 2 - x0 * z, y: 86 + (H - (y1 - y0) * z) / 2 - y0 * z });
 }
@@ -2663,18 +2663,26 @@ function drawMinimap() {
   wrap.hidden = !show;
   $('#mmToggle').hidden = !hasContent || NARROW();
   if (!show) return;
-  const W = wrap.clientWidth, H = wrap.clientHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
-  if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
-  const ctx = cv.getContext('2d');
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
   const v = b.view, bw = boardEl.clientWidth, bh = boardEl.clientHeight;
   const view = { x0: -v.x / v.z, y0: -v.y / v.z, x1: (bw - v.x) / v.z, y1: (bh - v.y) / v.z };
   const rects = b.cards.map(c => { const s = cardSize(c.id); return { c, x: c.x, y: c.y, w: s.w, h: s.h }; });
   const zr = b.zones.map(z => ({ z, x: z.x, y: z.y, w: z.w, h: z.h }));
   const all = rects.concat(zr);
-  let x0 = Math.min(view.x0, ...all.map(r => r.x)), y0 = Math.min(view.y0, ...all.map(r => r.y));
-  let x1 = Math.max(view.x1, ...all.map(r => r.x + r.w)), y1 = Math.max(view.y1, ...all.map(r => r.y + r.h));
-  const padX = (x1 - x0) * 0.06, padY = (y1 - y0) * 0.06; x0 -= padX; x1 += padX; y0 -= padY; y1 += padY;
+  // The map shows the content only, at a small scale, so the box takes the shape of what is on the
+  // board. Where you are is drawn on top as a frame (cut off at the edges when it is larger).
+  let x0 = Math.min(...all.map(r => r.x)), y0 = Math.min(...all.map(r => r.y));
+  let x1 = Math.max(...all.map(r => r.x + r.w)), y1 = Math.max(...all.map(r => r.y + r.h));
+  const pad = Math.max(40, Math.max(x1 - x0, y1 - y0) * 0.06); x0 -= pad; x1 += pad; y0 -= pad; y1 += pad;
+  const MAXW = 168, MAXH = 112, MIN = 44, aspect = (x1 - x0) / (y1 - y0);
+  let W, H;
+  if (aspect >= MAXW / MAXH) { W = MAXW; H = Math.max(MIN, Math.round(MAXW / aspect)); }
+  else { H = MAXH; W = Math.max(MIN, Math.round(MAXH * aspect)); }
+  if (!MM.dragging) { wrap.style.width = W + 'px'; wrap.style.height = H + 'px'; }
+  else { W = wrap.clientWidth; H = wrap.clientHeight; }
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
   const k = Math.min(W / (x1 - x0), H / (y1 - y0));
   const ox = x0 - (W / k - (x1 - x0)) / 2, oy = y0 - (H / k - (y1 - y0)) / 2;
   MM.t = { k, ox, oy };
@@ -2693,10 +2701,16 @@ function drawMinimap() {
   }
   ctx.globalAlpha = 1;
   const accent = cs.getPropertyValue('--accent').trim() || '#6965db';
-  const vx = px(view.x0), vy = py(view.y0), vw = (view.x1 - view.x0) * k, vh = (view.y1 - view.y0) * k;
-  ctx.fillStyle = accent; ctx.globalAlpha = 0.1; ctx.fillRect(vx, vy, vw, vh);
-  ctx.globalAlpha = 1; ctx.strokeStyle = accent; ctx.lineWidth = 1.5;
-  ctx.strokeRect(Math.max(0.75, vx), Math.max(0.75, vy), Math.min(W - 1.5, vw), Math.min(H - 1.5, vh));
+  const vx0 = clamp(px(view.x0), 0.75, W - 0.75), vy0 = clamp(py(view.y0), 0.75, H - 0.75);
+  const vx1 = clamp(px(view.x1), 0.75, W - 0.75), vy1 = clamp(py(view.y1), 0.75, H - 0.75);
+  if (vx1 - vx0 > 2 && vy1 - vy0 > 2) {
+    ctx.fillStyle = accent; ctx.globalAlpha = 0.1; ctx.fillRect(vx0, vy0, vx1 - vx0, vy1 - vy0);
+    ctx.globalAlpha = 1; ctx.strokeStyle = accent; ctx.lineWidth = 1.5; ctx.strokeRect(vx0, vy0, vx1 - vx0, vy1 - vy0);
+  } else {
+    // looking at empty space beside the content: a dot on the edge points the way
+    const cx = clamp(px((view.x0 + view.x1) / 2), 4, W - 4), cy = clamp(py((view.y0 + view.y1) / 2), 4, H - 4);
+    ctx.globalAlpha = 1; ctx.fillStyle = accent; ctx.beginPath(); ctx.arc(cx, cy, 3.5, 0, Math.PI * 2); ctx.fill();
+  }
 }
 function minimapGo(e, animate) {
   if (!MM.t) return;
@@ -2709,9 +2723,9 @@ $('#mmCanvas').addEventListener('pointerdown', e => {
   e.preventDefault(); e.stopPropagation();
   const cv = e.currentTarget; cv.setPointerCapture(e.pointerId);
   // freeze the map while dragging, so the frame doesn't run away from the pointer
-  const frozen = MM.t; minimapGo(e, true);
+  const frozen = MM.t; MM.dragging = true; minimapGo(e, true);
   const move = ev => { MM.t = frozen; minimapGo(ev, false); };
-  const up = () => { cv.removeEventListener('pointermove', move); cv.removeEventListener('pointerup', up); cv.removeEventListener('pointercancel', up); scheduleMinimap(); };
+  const up = () => { MM.dragging = false; cv.removeEventListener('pointermove', move); cv.removeEventListener('pointerup', up); cv.removeEventListener('pointercancel', up); scheduleMinimap(); };
   cv.addEventListener('pointermove', move); cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
 });
 $('#mmCanvas').addEventListener('wheel', e => { e.stopPropagation(); }, { passive: true });
