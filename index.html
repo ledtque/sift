@@ -585,7 +585,6 @@ svg.i.s{width:16px;height:16px}
     <section id="boardPane" aria-label="Board">
       <div class="vhead">
         <button id="backToPdf" hidden class="island-btn back" type="button" title="Back to the PDF and board (Alt+2)"><svg class="i s"><use href="#i-back"/></svg><svg class="i s"><use href="#i-pdf"/></svg><span id="backName">PDF</span></button>
-        <input id="boardName" class="board-name" type="text" aria-label="Board name" spellcheck="false" autocomplete="off">
         <span class="spacer"></span>
         <div id="tools" class="tools" role="toolbar" aria-label="Board tools">
           <button class="tool" data-tool="hand" type="button" title="Hand: drag to move around — H, or hold Space" aria-label="Hand tool"><svg class="i s"><use href="#i-hand"/></svg><kbd>H</kbd></button>
@@ -1507,18 +1506,12 @@ function seedBoard() {
   };
 }
 function saveBoard(b = board()) { if (b) later('board' + b.id, () => { commitHistory(b); DB.put('boards', b); }, 350); }
+/* A PDF's board is named after the PDF, so it follows the name set in the reader. */
 function renderBoardSel() {
-  const b = board(); const inp = $('#boardName');
-  if (b && document.activeElement !== inp) inp.value = b.name;
-  sizeBoardName();
+  const b = board(); if (!b || !b.docId) return;
+  const d = S.docs.find(x => x.id === b.docId);
+  if (d && b.name !== d.name) { b.name = d.name; DB.put('boards', b); }
 }
-function sizeBoardName() { const inp = $('#boardName'); inp.style.width = Math.min(420, Math.max(80, (inp.value.length + 2) * 9.5)) + 'px'; }
-$('#boardName').addEventListener('input', e => {
-  const b = board(); if (!b) return;
-  b.name = e.target.value.trim() || 'Untitled board'; sizeBoardName(); saveBoard();
-});
-$('#boardName').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); e.target.blur(); } });
-$('#boardName').addEventListener('blur', e => { if (!e.target.value.trim()) e.target.value = board().name; sizeBoardName(); });
 
 /* ---------- rename the open PDF from the reader header ---------- */
 $('#docTitle').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); if (e.key === 'Escape') { const d = S.docs.find(x => x.id === S.doc); if (d) e.target.value = d.name; } e.target.blur(); } });
@@ -1529,10 +1522,10 @@ function renameDoc() {
   const name = inp.value.trim();
   if (!name) { inp.value = d.name; return; }
   if (name === d.name) return;
-  const old = d.name; d.name = name; DB.put('docs', d);
+  d.name = name; DB.put('docs', d);
   for (const h of S.hls) if (h.docId === d.id) { h.docName = name; DB.put('hls', h); }
   const b = S.boards.find(x => x.docId === d.id);
-  if (b && b.name === old) { b.name = name; DB.put('boards', b); }
+  if (b) { b.name = name; DB.put('boards', b); }
   renderLibrary(); renderBoardSel(); renderBoard();
   $('#backName').textContent = name;
 }

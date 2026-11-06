@@ -23,7 +23,7 @@ PDFs are copied into the browser when you add them, so deleting the original fil
 - **Contents** (list icon) jumps through the PDF's own table of contents, when it has one.
 - **Ctrl+F** finds text in the PDF, with next/previous and every match marked on the page.
 - **Ctrl + scroll** zooms the PDF. Each PDF remembers its zoom and the page you stopped on.
-- Click the PDF's name to rename it.
+- Click the PDF's name to rename it. Its board takes the same name.
 
 ## The board
 
