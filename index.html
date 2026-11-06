@@ -476,7 +476,7 @@ svg.i.s{width:16px;height:16px}
 .card.img-card.sel{outline-offset:4px}
 
 /* ---------- minimap ---------- */
-.minimap{position:absolute;right:12px;bottom:12px;width:168px;height:112px;background:var(--island);border-radius:9px;box-shadow:var(--island-shadow);z-index:4;overflow:hidden;color:var(--muted)}
+.minimap{position:absolute;right:12px;bottom:12px;width:168px;height:112px;background:var(--bg);border-radius:9px;box-shadow:var(--island-shadow);z-index:4;overflow:hidden;color:var(--muted)}
 .minimap canvas{display:block;width:100%;height:100%;cursor:pointer;touch-action:none}
 .mm-toggle{height:36px;min-width:36px;border:0;background:transparent;color:var(--muted);border-radius:8px;cursor:pointer;display:grid;place-items:center;padding:0}
 .mm-toggle:hover{background:var(--hover);color:var(--fg)}
@@ -2622,6 +2622,7 @@ function imageCardEl(c) {
   const im = document.createElement('img');
   im.alt = ''; im.draggable = false; im.decoding = 'async';
   im.style.aspectRatio = `1 / ${c.ar || 0.75}`;
+  im.addEventListener('load', () => scheduleMinimap());
   const u = imgURLs.get(c.img);
   if (u) im.src = u;
   else imageURL(c.img).then(x => { if (x) im.src = x; else e.classList.add('img-missing'); });
@@ -2645,14 +2646,24 @@ $('#imgIn').addEventListener('change', e => { const f = [...e.target.files]; e.t
 /* ---------- minimap ---------- */
 const MM = { on: LS.get('minimap', true), raf: 0, t: null, colors: new Map() };
 function scheduleMinimap() { if (!MM.raf) MM.raf = requestAnimationFrame(drawMinimap); }
-function mmColor(c) {
+/* What each card looks like on the map, read once from the board and kept until the board redraws. */
+function mmLook(c) {
   if (MM.colors.has(c.id)) return MM.colors.get(c.id);
   const e = world.querySelector(`.card[data-id="${c.id}"]`);
-  const t = e && (e.querySelector('.card-text') || e.querySelector('img'));
-  let col = null;
-  if (t) col = t.tagName === 'IMG' ? 'img' : getComputedStyle(t).borderTopColor;
-  if (col) MM.colors.set(c.id, col);
-  return col || '#888';
+  let look = null;
+  if (e && c.img) look = { img: e.querySelector('img') };
+  else if (e) {
+    const cs = getComputedStyle(e.querySelector('.card-text'));
+    const framed = cs.borderTopColor !== 'rgba(0, 0, 0, 0)';
+    look = { stroke: framed ? cs.borderTopColor : null, ink: cs.color, size: parseFloat(cs.fontSize) || 17 };
+  }
+  if (look) MM.colors.set(c.id, look);
+  return look || { stroke: '#999', ink: '#999', size: 17 };
+}
+function mmRound(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  r = Math.max(0, Math.min(r, w / 2, h / 2));
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
 }
 function drawMinimap() {
   MM.raf = 0;
@@ -2688,24 +2699,56 @@ function drawMinimap() {
   MM.t = { k, ox, oy };
   const px = x => (x - ox) * k, py = y => (y - oy) * k;
   const cs = getComputedStyle(wrap);
-  for (const r of zr) {
-    const col = getComputedStyle(world.querySelector(`.zone[data-id="${r.z.id}"]`) || wrap, '::before').borderTopColor || cs.color;
-    ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.globalAlpha = 0.8;
-    ctx.strokeRect(px(r.x) + 0.5, py(r.y) + 0.5, Math.max(2, r.w * k), Math.max(2, r.h * k));
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  // connections first, under everything, like on the board
+  const center = id => { const r = rects.find(x => x.c.id === id); return r ? [px(r.x + r.w / 2), py(r.y + r.h / 2)] : null; };
+  ctx.strokeStyle = cs.color; ctx.globalAlpha = 0.55; ctx.lineWidth = 1;
+  for (const l of b.links) {
+    const A = center(l.a), B = center(l.b); if (!A || !B) continue;
+    const mx = (A[0] + B[0]) / 2, my = (A[1] + B[1]) / 2, dx = B[0] - A[0], dy = B[1] - A[1];
+    ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.quadraticCurveTo(mx - dy * 0.12, my + dx * 0.12, B[0], B[1]); ctx.stroke();
   }
+  ctx.globalAlpha = 1;
+  for (const r of zr) {
+    const ze = world.querySelector(`.zone[data-id="${r.z.id}"]`);
+    ctx.strokeStyle = (ze && getComputedStyle(ze, '::before').borderTopColor) || cs.color;
+    ctx.lineWidth = r.z.sw === 'l' ? 1.6 : 1;
+    mmRound(ctx, px(r.x) + 0.5, py(r.y) + 0.5, Math.max(2, r.w * k), Math.max(2, r.h * k), 12 * k + 1); ctx.stroke();
+  }
+  const paper = getComputedStyle(boardEl).backgroundColor;
   for (const r of rects) {
-    const col = mmColor(r.c);
-    ctx.globalAlpha = col === 'img' ? 0.35 : 0.75;
-    ctx.fillStyle = col === 'img' ? cs.color : col;
-    ctx.fillRect(px(r.x), py(r.y), Math.max(2, r.w * k), Math.max(1.5, r.h * k));
+    const L = mmLook(r.c);
+    const x = px(r.x), y = py(r.y), w = Math.max(2, r.w * k), h = Math.max(1.5, r.h * k);
+    if (L.img) {
+      ctx.save(); mmRound(ctx, x, y, w, h, 7 * k + 0.5); ctx.clip();
+      if (L.img.complete && L.img.naturalWidth) { try { ctx.drawImage(L.img, x, y, w, h); } catch (e) {} }
+      else { ctx.fillStyle = cs.color; ctx.globalAlpha = 0.2; ctx.fillRect(x, y, w, h); ctx.globalAlpha = 1; }
+      ctx.restore(); continue;
+    }
+    // the card on its paper, so lines underneath don't run through it
+    mmRound(ctx, x, y, w, h, 9 * k + 0.5); ctx.fillStyle = paper; ctx.fill();
+    if (L.stroke) { ctx.strokeStyle = L.stroke; ctx.lineWidth = 1; ctx.stroke(); }
+    // text as faint lines, one per line of text when there's room for them
+    const lineH = L.size * 1.42 * k, padX = 11 * k, padY = 8 * k;
+    const lines = Math.floor((h - padY * 2 + lineH * 0.3) / lineH);
+    if (lines >= 1 && lineH >= 1.6 && w - padX * 2 > 3) {
+      ctx.strokeStyle = L.ink; ctx.globalAlpha = 0.5; ctx.lineWidth = Math.max(0.8, Math.min(1.8, L.size * k * 0.55));
+      for (let i = 0; i < lines; i++) {
+        const ly = y + padY + lineH * (i + 0.55), len = (w - padX * 2) * (i === lines - 1 && lines > 1 ? 0.6 : 1);
+        ctx.beginPath(); ctx.moveTo(x + padX, ly); ctx.lineTo(x + padX + len, ly); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    } else if (!L.stroke) {
+      ctx.fillStyle = L.ink; ctx.globalAlpha = 0.5; ctx.fillRect(x, y + h * 0.35, w, Math.max(1, h * 0.3)); ctx.globalAlpha = 1;
+    }
   }
   ctx.globalAlpha = 1;
   const accent = cs.getPropertyValue('--accent').trim() || '#6965db';
   const vx0 = clamp(px(view.x0), 0.75, W - 0.75), vy0 = clamp(py(view.y0), 0.75, H - 0.75);
   const vx1 = clamp(px(view.x1), 0.75, W - 0.75), vy1 = clamp(py(view.y1), 0.75, H - 0.75);
   if (vx1 - vx0 > 2 && vy1 - vy0 > 2) {
-    ctx.fillStyle = accent; ctx.globalAlpha = 0.1; ctx.fillRect(vx0, vy0, vx1 - vx0, vy1 - vy0);
-    ctx.globalAlpha = 1; ctx.strokeStyle = accent; ctx.lineWidth = 1.5; ctx.strokeRect(vx0, vy0, vx1 - vx0, vy1 - vy0);
+    ctx.fillStyle = accent; ctx.globalAlpha = 0.07; mmRound(ctx, vx0, vy0, vx1 - vx0, vy1 - vy0, 4); ctx.fill();
+    ctx.globalAlpha = 1; ctx.strokeStyle = accent; ctx.lineWidth = 1.5; mmRound(ctx, vx0, vy0, vx1 - vx0, vy1 - vy0, 4); ctx.stroke();
   } else {
     // looking at empty space beside the content: a dot on the edge points the way
     const cx = clamp(px((view.x0 + view.x1) / 2), 4, W - 4), cy = clamp(py((view.y0 + view.y1) / 2), 4, H - 4);
