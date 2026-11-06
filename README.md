@@ -33,7 +33,7 @@ Every PDF has its own board. Cards show the full highlight; double-click a card 
 
 **Minimap:** the small map in the bottom-right corner shows the whole board and where you are. Click or drag on it to move around; press **M** to hide or show it.
 
-Press **F** for full screen. **Ctrl+F** over the board finds cards. **⋯ → Export as PNG** saves the board as an image (only the selected cards, if any are selected), and **Copy as PNG** puts it on the clipboard. **⋯ → Export as Markdown** saves the board as notes for Obsidian, Notion and the like. Press **?** for all shortcuts.
+**Layouts:** the switch at the top right shows the PDF only, the PDF and the board side by side, or the board only (**Alt+1 / Alt+2 / Alt+3**). Highlights you make with the board hidden are still added to it. **F** puts the whole window in full screen, whatever the layout. **Ctrl+F** over the board finds cards. **⋯ → Export as PNG** saves the board as an image (only the selected cards, if any are selected), and **Copy as PNG** puts it on the clipboard. **⋯ → Export as Markdown** saves the board as notes for Obsidian, Notion and the like. Press **?** for all shortcuts.
 
 | Key | Action |
 | --- | --- |
@@ -55,7 +55,8 @@ Press **F** for full screen. **Ctrl+F** over the board finds cards. **⋯ → Ex
 | Ctrl+Shift+E | Export as PNG |
 | Shift+Alt+C | Copy as PNG |
 | Arrow keys | Nudge selection (Shift for bigger steps) |
-| F | Full screen board, and back |
+| F | Full screen, and back |
+| Alt+1 / Alt+2 / Alt+3 | PDF only, both, board only |
 | Esc | Clear selection |
 
 ## Hosting
