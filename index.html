@@ -227,7 +227,12 @@ svg.i.s{width:16px;height:16px}
 #links .lk2{stroke-width:1;opacity:.5}
 #links .lk.on{stroke:var(--accent);opacity:1}
 #links .lk-hit{fill:none;stroke:transparent;stroke-width:16;pointer-events:stroke;cursor:pointer}
-#links .lk-del{pointer-events:all;cursor:pointer}
+#links .lk-del,#links .lk-lab{pointer-events:all;cursor:pointer}
+#links .lk-lab circle{fill:var(--island);stroke:var(--accent);stroke-width:1.5}
+#links .lk-lab text{fill:var(--accent);font:700 11px var(--f-ui,system-ui);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+#links .lk-label{font-family:var(--f-hand);font-size:15px;fill:currentColor;text-anchor:middle;dominant-baseline:central;paint-order:stroke;stroke:var(--bg);stroke-width:6px;stroke-linejoin:round;pointer-events:all;cursor:pointer}
+.lk-input{position:absolute;z-index:20;transform:translate(-50%,-50%);font-family:var(--f-hand);font-size:15px;text-align:center;border:1.5px solid var(--accent);border-radius:7px;background:var(--bg);color:var(--fg);padding:3px 8px;width:170px;outline:0}
+.p-wrap{flex-wrap:wrap}
 #links .lk-del circle{fill:var(--accent)}
 #links .lk-del path{stroke:var(--accent-fg);stroke-width:2}
 #links .lk-tmp{fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:6 6;stroke-linecap:round}
@@ -671,6 +676,14 @@ body:has(#modal:not([hidden])) #notices,body:has(#gate:not([hidden])) #notices{d
   <symbol id="i-hls" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h7"/><rect x="3" y="4.5" width="3" height="3" rx=".8"/><rect x="3" y="10.5" width="3" height="3" rx=".8"/><rect x="3" y="16.5" width="3" height="3" rx=".8"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><rect x="3" y="7" width="11" height="11" rx="2"/><path d="M14 4.5h5.5V10M19.5 4.5 11 13"/></symbol>
   <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-a-left" viewBox="0 0 24 24"><path d="M4 3v18"/><rect x="7" y="6" width="12" height="4" rx="1"/><rect x="7" y="14" width="7" height="4" rx="1"/></symbol>
+  <symbol id="i-a-hcenter" viewBox="0 0 24 24"><path d="M12 3v18"/><rect x="5" y="6" width="14" height="4" rx="1"/><rect x="8" y="14" width="8" height="4" rx="1"/></symbol>
+  <symbol id="i-a-right" viewBox="0 0 24 24"><path d="M20 3v18"/><rect x="5" y="6" width="12" height="4" rx="1"/><rect x="10" y="14" width="7" height="4" rx="1"/></symbol>
+  <symbol id="i-a-top" viewBox="0 0 24 24"><path d="M3 4h18"/><rect x="6" y="7" width="4" height="12" rx="1"/><rect x="14" y="7" width="4" height="7" rx="1"/></symbol>
+  <symbol id="i-a-vcenter" viewBox="0 0 24 24"><path d="M3 12h18"/><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="8" width="4" height="8" rx="1"/></symbol>
+  <symbol id="i-a-bottom" viewBox="0 0 24 24"><path d="M3 20h18"/><rect x="6" y="5" width="4" height="12" rx="1"/><rect x="14" y="10" width="4" height="7" rx="1"/></symbol>
+  <symbol id="i-d-h" viewBox="0 0 24 24"><path d="M3 4v16M21 4v16"/><rect x="9.5" y="7" width="5" height="10" rx="1"/></symbol>
+  <symbol id="i-d-v" viewBox="0 0 24 24"><path d="M4 3h16M4 21h16"/><rect x="7" y="9.5" width="10" height="5" rx="1"/></symbol>
   <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></symbol>
 </svg>
 
@@ -810,6 +823,16 @@ body:has(#modal:not([hidden])) #notices,body:has(#gate:not([hidden])) #notices{d
             <button class="p-btn" data-sw="s" type="button" title="Thin" aria-label="Thin"><svg class="i s" viewBox="0 0 24 24"><path d="M4 12h16" stroke-width="1.2"/></svg></button>
             <button class="p-btn" data-sw="m" type="button" title="Normal" aria-label="Normal"><svg class="i s" viewBox="0 0 24 24"><path d="M4 12h16" stroke-width="2.2"/></svg></button>
             <button class="p-btn" data-sw="l" type="button" title="Bold" aria-label="Bold stroke"><svg class="i s" viewBox="0 0 24 24"><path d="M4 12h16" stroke-width="4"/></svg></button>
+          </div></section>
+          <section class="p-sec" id="pAlign"><h4>Align</h4><div class="p-row p-wrap">
+            <button class="p-btn" data-al="left" type="button" title="Align left edges" aria-label="Align left edges"><svg class="i s"><use href="#i-a-left"/></svg></button>
+            <button class="p-btn" data-al="hcenter" type="button" title="Center horizontally" aria-label="Center horizontally"><svg class="i s"><use href="#i-a-hcenter"/></svg></button>
+            <button class="p-btn" data-al="right" type="button" title="Align right edges" aria-label="Align right edges"><svg class="i s"><use href="#i-a-right"/></svg></button>
+            <button class="p-btn" data-al="top" type="button" title="Align top edges" aria-label="Align top edges"><svg class="i s"><use href="#i-a-top"/></svg></button>
+            <button class="p-btn" data-al="vcenter" type="button" title="Center vertically" aria-label="Center vertically"><svg class="i s"><use href="#i-a-vcenter"/></svg></button>
+            <button class="p-btn" data-al="bottom" type="button" title="Align bottom edges" aria-label="Align bottom edges"><svg class="i s"><use href="#i-a-bottom"/></svg></button>
+            <button class="p-btn" data-al="dh" type="button" title="Space evenly side to side" aria-label="Space evenly side to side"><svg class="i s"><use href="#i-d-h"/></svg></button>
+            <button class="p-btn" data-al="dv" type="button" title="Space evenly top to bottom" aria-label="Space evenly top to bottom"><svg class="i s"><use href="#i-d-v"/></svg></button>
           </div></section>
           <section class="p-sec" id="pLayer"><h4>Layers</h4><div class="p-row">
             <button class="p-btn" data-act="back" type="button" title="Send to back (Ctrl+Shift+[)" aria-label="Send to back"><svg class="i s"><use href="#i-to-back"/></svg></button>
@@ -2363,9 +2386,12 @@ function drawLinks(tmp) {
     const on = S.selLink === l.id;
     const d2 = `M${A[0] + 1.5},${A[1] - 1} Q${qx + 3},${qy + 2} ${B[0] - 1},${B[1] + 1.5}`;
     parts.push(`<path class="lk${on ? ' on' : ''}" d="${d}"/><path class="lk lk2${on ? ' on' : ''}" d="${d2}"/><path class="lk-hit" data-link="${l.id}" d="${d}"/>`);
+    const px = 0.25 * A[0] + 0.5 * qx + 0.25 * B[0], py = 0.25 * A[1] + 0.5 * qy + 0.25 * B[1];
+    if (l.label) parts.push(`<text class="lk-label" data-link="${l.id}" x="${px}" y="${py}">${escHtml(l.label)}</text>`);
     if (on) {
-      const px = 0.25 * A[0] + 0.5 * qx + 0.25 * B[0], py = 0.25 * A[1] + 0.5 * qy + 0.25 * B[1];
-      parts.push(`<g class="lk-del" data-link="${l.id}" transform="translate(${px},${py})"><title>Remove connection</title><circle r="10"/><path d="M-3.5,-3.5 L3.5,3.5 M3.5,-3.5 L-3.5,3.5"/></g>`);
+      const off = l.label ? 16 : 0;
+      parts.push(`<g class="lk-del" data-link="${l.id}" transform="translate(${px - 13},${py - off})"><title>Remove connection</title><circle r="10"/><path d="M-3.5,-3.5 L3.5,3.5 M3.5,-3.5 L-3.5,3.5"/></g>`);
+      parts.push(`<g class="lk-lab" data-link="${l.id}" transform="translate(${px + 13},${py - off})"><title>Write on the connection</title><circle r="10"/><text>T</text></g>`);
     }
   }
   if (tmp) parts.push(`<path class="lk-tmp" d="M${tmp[0]},${tmp[1]} L${tmp[2]},${tmp[3]}"/>`);
@@ -2473,6 +2499,8 @@ function placeCardBar() {
   $('#pColor').hidden = !(text.length || zones.length);
   $('#pSize').hidden = $('#pText').hidden = $('#pFrame').hidden = !text.length;
   $('#pStroke').hidden = !zones.length;
+  $('#pAlign').hidden = cards.length + zones.length < 2;
+  $$('#pAlign [data-al="dh"],#pAlign [data-al="dv"]').forEach(b => { b.hidden = cards.length + zones.length < 3; });
   const one = (vals, v) => vals.size === 1 && vals.has(v);
   const inks = new Set(text.map(c => {
     const h = c.hl ? hlById(c.hl) : null;
@@ -2522,6 +2550,7 @@ $('#props').addEventListener('click', e => {
   else if (d.act === 'front' || d.act === 'back') styleSelection({ layer: d.act });
   else if (d.act === 'dup') { if (copySelection()) pasteClip(null); }
   else if (d.act === 'send') openBoardsPop(btn, 'send');
+  else if (d.al) alignSelection(d.al);
   else if (d.act === 'del') deleteSelection();
 });
 document.addEventListener('keydown', e => {
@@ -2672,7 +2701,12 @@ boardEl.addEventListener('pointerdown', e => {
   if (linkHit) {
     const id = linkHit.dataset.link;
     if (linkHit.classList.contains('lk-del')) { b.links = b.links.filter(l => l.id !== id); S.selLink = null; saveBoard(); }
-    else { S.sel = new Set(); syncSelClasses(); S.selLink = id; placeCardBar(); }
+    else if (linkHit.classList.contains('lk-lab')) { e.preventDefault(); requestAnimationFrame(() => editLinkLabel(id)); return; }
+    else if (S.lastLink && S.lastLink.id === id && performance.now() - S.lastLink.t < 450) {
+      // double-click: the lines are redrawn on the first click, so the browser's own dblclick never arrives
+      S.lastLink = null; e.preventDefault(); requestAnimationFrame(() => editLinkLabel(id)); return;
+    }
+    else { S.sel = new Set(); syncSelClasses(); S.selLink = id; placeCardBar(); S.lastLink = { id, t: performance.now() }; }
     drawLinks(); e.preventDefault(); return;
   }
   if (t.closest('.handle') && cardE) {
@@ -2828,6 +2862,8 @@ boardEl.addEventListener('click', e => {
 boardEl.addEventListener('dblclick', e => {
   // Pointer capture makes the board the event target, so look at what is actually under the pointer.
   const under = document.elementFromPoint(e.clientX, e.clientY) || e.target;
+  const lk = under.closest && under.closest('[data-link]');
+  if (lk && S.tool !== 'hand') { editLinkLabel(lk.dataset.link); return; }
   const ce = under.closest('.card');
   if (ce && S.tool !== 'hand') {
     if (under.closest('button,.cw-handle')) return;
@@ -3055,11 +3091,13 @@ async function boardCanvas({ selectionOnly = true, background = true } = {}) {
     if (n) { const ns = getComputedStyle(n); card.notes.push({ color: ns.color, font: `${ns.fontStyle} ${ns.fontWeight} ${ns.fontSize} ${ns.fontFamily}`, words: wordsOf(n, toW), ...toW(n.getBoundingClientRect()) }); }
     items.push(card);
   }
-  const links = [];
+  const links = [], labels = [];
   for (const l of b.links) {
     if (!ids.has(l.a) || !ids.has(l.b)) continue;
     const hit = linksSvg.querySelector(`.lk-hit[data-link="${l.id}"]`); if (!hit) continue;
     links.push(hit.getAttribute('d'));
+    const lt = l.label && linksSvg.querySelector(`.lk-label[data-link="${l.id}"]`);
+    if (lt) labels.push({ text: l.label, x: +lt.getAttribute('x'), y: +lt.getAttribute('y'), font: (() => { const cs = getComputedStyle(lt); return `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`; })(), color: getComputedStyle(lt).fill });
   }
   const linkStyle = (() => { const p = linksSvg.querySelector('.lk:not(.on)') || linksSvg.querySelector('.lk'); const cs = p ? getComputedStyle(p) : null; return { color: cs ? cs.stroke : '#1e1e1e', opacity: cs ? +cs.opacity : 0.85 }; })();
 
@@ -3085,6 +3123,13 @@ async function boardCanvas({ selectionOnly = true, background = true } = {}) {
     ctx.save(); ctx.translate(1.5, -1); ctx.globalAlpha = linkStyle.opacity * 0.5; ctx.lineWidth = 1; ctx.stroke(p); ctx.restore();
   }
   ctx.globalAlpha = 1;
+  const paperColor = getComputedStyle(boardEl).backgroundColor || '#ffffff';
+  for (const t of labels) {
+    ctx.font = t.font; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 6; ctx.strokeStyle = paperColor; ctx.strokeText(t.text, t.x, t.y);
+    ctx.fillStyle = t.color; ctx.fillText(t.text, t.x, t.y);
+  }
+  ctx.textAlign = 'left';
   const drawWords = (words, font, color) => {
     ctx.font = font; ctx.fillStyle = color; ctx.textBaseline = 'middle';
     for (const w of words) ctx.fillText(w.text, w.x, w.y + w.h / 2);
@@ -4532,6 +4577,63 @@ function setNightPages(on) {
 }
 setNightPages(LS.get('nightPages', false));
 $('#nightBtn').onclick = () => { setNightPages(!$('#app').classList.contains('night-pages')); $('#boardMenu').hidden = true; };
+
+/* ---------- align and space out the selection ---------- */
+function alignSelection(kind) {
+  const b = board();
+  const items = selectedCards().map(c => { const s = cardSize(c.id); return { o: c, w: s.w, h: s.h }; })
+    .concat(selectedZones().map(z => ({ o: z, w: z.w, h: z.h })));
+  if (items.length < 2) return;
+  const x0 = Math.min(...items.map(i => i.o.x)), y0 = Math.min(...items.map(i => i.o.y));
+  const x1 = Math.max(...items.map(i => i.o.x + i.w)), y1 = Math.max(...items.map(i => i.o.y + i.h));
+  const set = (i, x, y) => { if (x != null) i.o.x = Math.round(x); if (y != null) i.o.y = Math.round(y); };
+  if (kind === 'left') items.forEach(i => set(i, x0));
+  if (kind === 'right') items.forEach(i => set(i, x1 - i.w));
+  if (kind === 'hcenter') items.forEach(i => set(i, (x0 + x1) / 2 - i.w / 2));
+  if (kind === 'top') items.forEach(i => set(i, null, y0));
+  if (kind === 'bottom') items.forEach(i => set(i, null, y1 - i.h));
+  if (kind === 'vcenter') items.forEach(i => set(i, null, (y0 + y1) / 2 - i.h / 2));
+  if ((kind === 'dh' || kind === 'dv') && items.length >= 3) {
+    const hz = kind === 'dh', pos = i => (hz ? i.o.x : i.o.y), size = i => (hz ? i.w : i.h);
+    items.sort((a, c) => pos(a) - pos(c));
+    const span = (hz ? x1 - x0 : y1 - y0) - items.reduce((n, i) => n + size(i), 0);
+    // when they overlap there is no space to share out, so give each the same small gap
+    const gap = Math.max(span / (items.length - 1), span < 0 ? 24 : 0);
+    let at = hz ? x0 : y0;
+    for (const i of items) { if (hz) set(i, at); else set(i, null, at); at += size(i) + gap; }
+  }
+  saveBoard(); renderBoard();
+}
+
+/* ---------- words on a connection ---------- */
+function escHtml(t) { return String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]); }
+function editLinkLabel(id) {
+  const b = board(), l = b.links.find(x => x.id === id); if (!l) return;
+  const open = $('.lk-input', world);
+  if (open) { if (open.dataset.link === id) { open.focus(); return; } open.blur(); }
+  const t = linksSvg.querySelector(`.lk-label[data-link="${id}"]`);
+  let x, y;
+  if (t) { x = +t.getAttribute('x'); y = +t.getAttribute('y'); }
+  else {
+    const g = linksSvg.querySelector(`.lk-lab[data-link="${id}"],.lk-del[data-link="${id}"]`);
+    const m = g && /translate\(([-\d.e]+),([-\d.e]+)\)/.exec(g.getAttribute('transform'));
+    if (m) { x = +m[1] - (g.classList.contains('lk-lab') ? 13 : -13); y = +m[2]; }
+    else { const hit = linksSvg.querySelector(`.lk-hit[data-link="${id}"]`); const p = hit && hit.getPointAtLength(hit.getTotalLength() / 2); x = p ? p.x : 0; y = p ? p.y : 0; }
+  }
+  const inp = el('input', 'lk-input'); inp.type = 'text'; inp.dataset.link = id; inp.value = l.label || ''; inp.placeholder = 'e.g. contradicts';
+  inp.maxLength = 60; inp.setAttribute('aria-label', 'Words on this connection');
+  inp.style.left = x + 'px'; inp.style.top = y + 'px';
+  world.appendChild(inp); inp.focus(); inp.select();
+  let done = false;
+  const finish = save => {
+    if (done) return; done = true;
+    if (save) { const v = inp.value.trim(); if (v) l.label = v; else delete l.label; saveBoard(); }
+    if (inp.isConnected) inp.remove(); drawLinks();
+  };
+  inp.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); finish(true); } if (e.key === 'Escape') { e.preventDefault(); finish(false); } });
+  inp.addEventListener('blur', () => finish(true));
+  inp.addEventListener('pointerdown', e => e.stopPropagation());
+}
 
 /* ---------- start ---------- */
 async function init() {
