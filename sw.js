@@ -1,6 +1,6 @@
 // Sift offline support: keeps the app itself available without a connection.
 // Your PDFs, highlights and boards are stored separately in IndexedDB and are never touched here.
-const CACHE = 'sift-v2';
+const CACHE = 'sift-v3';
 const CORE = [
   './',
   'index.html',

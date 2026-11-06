@@ -293,6 +293,27 @@ svg.i.s{width:16px;height:16px}
 .sheet .close{position:absolute;right:12px;top:12px}
 #toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:95;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;max-width:calc(100% - 32px)}
 .toast{background:var(--island);color:var(--fg);padding:9px 15px;border-radius:10px;font-size:13.5px;box-shadow:var(--island-shadow);line-height:1.45;max-width:360px}
+#notices{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:92;display:flex;flex-direction:column;gap:8px;align-items:stretch;width:min(440px,calc(100% - 32px));pointer-events:none}
+@media (max-width:899px){ #notices{bottom:calc(64px + env(safe-area-inset-bottom,0px))} }
+.notice{pointer-events:auto;background:var(--island);color:var(--fg);border-radius:10px;box-shadow:var(--island-shadow);padding:10px 12px 10px 14px;display:flex;gap:12px;align-items:center;font-size:13.5px;line-height:1.45;border-left:3px solid var(--accent)}
+.notice[data-tone="warn"]{border-left-color:var(--sp)}
+body:has(#modal:not([hidden])) #notices,body:has(#gate:not([hidden])) #notices{display:none}
+.notice .n-text{flex:1;min-width:0}
+.notice .n-text b{display:block;font-weight:700}
+.notice .n-acts{display:flex;gap:4px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+.notice .btn{height:30px;font-size:13px;padding:0 10px}
+@media (max-width:599px){ .notice{flex-direction:column;align-items:stretch} .notice .n-acts{justify-content:flex-start} }
+#gate{position:fixed;inset:0;z-index:99;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(3px);display:grid;place-items:center;padding:16px}
+#gate .sheet{width:min(440px,100%);text-align:left}
+.snap-list{list-style:none;margin:0 0 6px;padding:0;max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.snap-list li{display:flex;align-items:center;gap:10px;padding:7px 8px 7px 12px;border-bottom:1px solid var(--line);font-size:13px}
+.snap-list li:last-child{border-bottom:0}
+.snap-list .s-when{font-weight:600;white-space:nowrap}
+.snap-list .s-what{flex:1;min-width:0;color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.snap-list .btn{height:28px;font-size:12.5px;padding:0 10px;flex:none}
+.snap-list .btn.confirm{background:var(--accent);color:var(--accent-fg);border-color:transparent}
+.snap-list .empty{color:var(--muted);justify-content:center;padding:14px}
+.sheet .warnline{color:var(--sp)}
 #dropCover{position:fixed;inset:0;z-index:85;background:color-mix(in srgb,var(--accent) 15%,transparent);display:grid;place-items:center;pointer-events:none}
 #dropCover div{background:var(--island);border:2px dashed var(--accent);border-radius:14px;padding:26px 34px;font-family:var(--f-hand);font-size:24px}
 #tabs{display:none}
@@ -770,12 +791,16 @@ svg.i.s{width:16px;height:16px}
       <button id="bkOff" class="btn ghost" type="button" hidden>Turn off</button>
     </div>
     <p id="bkTip" class="fine bk-tip">Tip: pick a folder inside Google Drive, OneDrive, Dropbox or iCloud Drive on your computer. Then your library is in the cloud too, and a new computer gets everything back with "Restore from a backup folder".</p>
+    <h3>Earlier versions</h3>
+    <p>Sift keeps copies of your highlights and boards as you work: when you open it, every few minutes while you work, and before anything big is removed. Going back to one is safe: what you have now is kept as a version first.</p>
+    <ul id="snapList" class="snap-list"></ul>
     <h3>Restore</h3>
     <div class="row"><button id="bkRestoreDir" class="btn" type="button">Restore from a backup folder</button><label class="btn" for="bkFile" tabindex="0">Restore from a backup file</label><input id="bkFile" type="file" accept=".json,application/json" hidden></div>
     <p class="fine">Restoring adds to what's here. Nothing is deleted.</p>
     <h3>Backup file</h3>
     <p>One file with everything, PDFs included. Works in every browser.</p>
     <div class="row"><button id="bkSave" class="btn" type="button">Save full backup file</button></div>
+    <p id="braveTip" class="fine" hidden></p>
     <p id="storeInfo" class="fine" style="margin-top:16px"></p>
   </div>
 </div>
@@ -841,6 +866,14 @@ svg.i.s{width:16px;height:16px}
 
 <div id="dropCover" hidden><div>Drop PDFs to read them, or images to put them on the board</div></div>
 <div id="toasts" aria-live="polite"></div>
+<div id="notices" aria-live="polite"></div>
+<div id="gate" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+    <h2 id="gateTitle">Sift is open in another tab</h2>
+    <p id="gateText">To keep your work from being overwritten, Sift works in one tab at a time.</p>
+    <div class="row"><button id="gateUse" class="btn primary" type="button">Use Sift here</button></div>
+  </div>
+</div>
 
 <script src="lib/pdf.min.js"></script>
 <script>
@@ -867,18 +900,31 @@ const LS = {
   get(k, d) { try { const v = localStorage.getItem('sift:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem('sift:' + k, JSON.stringify(v)); } catch (e) {} }
 };
+const SNAP = { dirty: false, lastT: 0, lastHash: '', chain: Promise.resolve() };
+const TAB = { release: null, ch: null, stopped: false };
+const KEYPATH = { docs: 'id', files: 'k', hls: 'id', boards: 'id', meta: 'k', images: 'k', snaps: 't' };
 const DB = {
   db: null,
+  // writes that failed (storage full, a browser error); they are tried again until they go through
+  failed: new Map(),
   open() {
     return new Promise(res => {
       try {
-        const r = indexedDB.open('sift-reader', 3);
+        const r = indexedDB.open('sift-reader', 4);
         r.onupgradeneeded = () => {
           const d = r.result;
-          for (const [n, k] of [['docs', 'id'], ['files', 'k'], ['hls', 'id'], ['boards', 'id'], ['meta', 'k'], ['images', 'k']])
+          for (const [n, k] of Object.entries(KEYPATH))
             if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, { keyPath: k });
         };
-        r.onsuccess = () => { this.db = r.result; res(true); };
+        // an older Sift tab still has the database open; it has to close before the update can finish
+        r.onblocked = () => { try { showGate('blocked'); } catch (e) {} };
+        r.onsuccess = () => {
+          this.db = r.result;
+          // a newer Sift opened in another tab and needs the database: step aside
+          this.db.onversionchange = () => { try { flushLater(); } catch (e) {} this.db.close(); this.db = null; try { showGate('updated'); } catch (e) {} };
+          try { hideGate('blocked'); } catch (e) {}
+          res(true);
+        };
         r.onerror = () => res(false);
       } catch (e) { res(false); }
     });
@@ -889,17 +935,39 @@ const DB = {
       try {
         const t = this.db.transaction(store, mode);
         const q = fn(t.objectStore(store));
-        t.oncomplete = () => res(q ? q.result : null);
-        t.onerror = t.onabort = () => res(null);
-      } catch (e) { res(null); }
+        t.oncomplete = () => res(q ? (q.result === undefined && mode === 'readwrite' ? true : q.result) : true);
+        t.onerror = t.onabort = () => { if (mode === 'readwrite') this.noteError(t.error); res(null); };
+      } catch (e) { if (mode === 'readwrite') this.noteError(e); res(null); }
     });
   },
-  all(s) { return this.req(s, 'readonly', o => o.getAll()).then(v => v || []); },
-  keys(s) { return this.req(s, 'readonly', o => o.getAllKeys()).then(v => v || []); },
-  get(s, k) { return this.req(s, 'readonly', o => o.get(k)); },
-  put(s, v) { const p = this.req(s, 'readwrite', o => o.put(v)); this.changed(s); return p; },
-  del(s, k) { const p = this.req(s, 'readwrite', o => o.delete(k)); this.changed(s); return p; },
-  changed(s) { if (s !== 'meta') { try { scheduleBackup(); } catch (e) {} } }
+  // like all(), but tells a failed read apart from an empty store
+  replace(s, items) { this.changed(s); return this.req(s, 'readwrite', o => { o.clear(); for (const v of items) o.put(v); }).then(r => r != null); },
+  allStrict(s) { return this.req(s, 'readonly', o => o.getAll()); },
+  all(s) { return this.req(s, 'readonly', o => o.getAll()).then(v => (Array.isArray(v) ? v : [])); },
+  keys(s) { return this.req(s, 'readonly', o => o.getAllKeys()).then(v => (Array.isArray(v) ? v : [])); },
+  get(s, k) { return this.req(s, 'readonly', o => o.get(k)).then(v => (v === true ? undefined : v)); },
+  put(s, v) { return this.track(s, v[KEYPATH[s]], { put: v }, this.req(s, 'readwrite', o => o.put(v))); },
+  del(s, k) { return this.track(s, k, { del: true }, this.req(s, 'readwrite', o => o.delete(k))); },
+  track(s, k, op, p) {
+    this.changed(s);
+    const key = s + '\u0000' + k;
+    const mine = Symbol(); this.failed.set(key, { s, k, ...op, mine, pending: true });
+    return p.then(r => {
+      const f = this.failed.get(key);
+      if (f && f.mine === mine) { if (r == null) { f.pending = false; this.onFail(); } else { this.failed.delete(key); this.onFail(); } }
+      return r;
+    });
+  },
+  async retry() {
+    const list = [...this.failed.values()].filter(f => !f.pending);
+    for (const f of list) {
+      if (f.put) await this.put(f.s, f.put); else await this.del(f.s, f.k);
+    }
+    return ![...this.failed.values()].some(f => !f.pending);
+  },
+  noteError(e) { this.lastError = (e && e.name) || 'Error'; },
+  onFail() { try { renderSaveAlert(); } catch (e) {} },
+  changed(s) { if (s !== 'meta' && s !== 'snaps') { if (s !== 'files' && s !== 'images') SNAP.dirty = true; try { scheduleBackup(); } catch (e) {} } }
 };
 
 /* ---------- small ui helpers ---------- */
@@ -1021,13 +1089,23 @@ $('#docList').addEventListener('click', e => {
     openDoc(id);
   }
 });
+/* The file itself stays stored for 30 days, so Undo and earlier versions can bring it back. */
 async function removeDoc(id) {
-  S.docs = S.docs.filter(d => d.id !== id);
+  const d = S.docs.find(x => x.id === id); if (!d) return;
+  takeSnapshot('Before removing a PDF');
+  const blob = memFiles.get(id), had = S.haveFile.has(id);
+  S.docs = S.docs.filter(x => x.id !== id);
   S.haveFile.delete(id); memFiles.delete(id);
-  await DB.del('docs', id); await DB.del('files', id);
   if (S.doc === id) closeDoc();
   renderLibrary(); renderTrayDocs();
-  toast('PDF removed. Its highlights stay on your boards.');
+  await DB.del('docs', id);
+  toastAction(`"${d.name.length > 40 ? d.name.slice(0, 38) + '…' : d.name}" removed. Its highlights stay.`, 'Undo', async () => {
+    if (!S.docs.some(x => x.id === id)) { S.docs.push(d); await DB.put('docs', d); }
+    if (blob) memFiles.set(id, blob);
+    if (had || await DB.get('files', id)) S.haveFile.add(id);
+    else if (blob && (await DB.put('files', { k: id, blob })) != null) S.haveFile.add(id);
+    renderLibrary(); renderTrayDocs(); toast('The PDF is back.', 1600);
+  }, 9000);
 }
 
 async function addFiles(list) {
@@ -1621,6 +1699,7 @@ function eraseAt(e) {
     return eraseAt({ target: under, clientX: e.clientX, clientY: e.clientY });
   }
   const h = hlAt(pEl, e.clientX, e.clientY); if (!h) return;
+  if (!ERASE.stroke.snapped) { ERASE.stroke.snapped = true; takeSnapshot('Before erasing highlights', { minGap: 60e3 }); }
   ERASE.stroke.removed.push(removeHighlight(h));
   redrawPage(h.page);
 }
@@ -1846,9 +1925,11 @@ function renderBoard() {
   hist(b);
   MM.colors.clear();
   $$('.zone,.card', world).forEach(x => x.remove());
-  b.cards = b.cards.filter(c => !c.hl || hlById(c.hl));
-  for (const z of b.zones) world.appendChild(zoneEl(z));
-  for (const c of b.cards) { const e = cardEl(c); if (e) world.appendChild(e); }
+  // a card whose highlight is gone is left out of the picture, not out of the saved board
+  let broken = 0;
+  for (const z of b.zones) { try { world.appendChild(zoneEl(z)); } catch (e) { broken++; console.warn('zone', z, e); } }
+  for (const c of b.cards) { try { const e = cardEl(c); if (e) world.appendChild(e); } catch (e) { broken++; console.warn('card', c, e); } }
+  if (broken) onAppError();
   applyView();
   boardEl.classList.toggle('recall', S.recall);
   updateHint();
@@ -1881,7 +1962,7 @@ function updateCounts() {
 }
 function drawLinks(tmp) {
   const b = board(); const parts = [];
-  const center = id => { const c = b.cards.find(c => c.id === id); if (!c) return null; const s = cardSize(id); return [c.x + s.w / 2, c.y + s.h / 2]; };
+  const center = id => { const c = b.cards.find(c => c.id === id); if (!c || (c.hl && !hlById(c.hl))) return null; const s = cardSize(id); return [c.x + s.w / 2, c.y + s.h / 2]; };
   for (const l of b.links) {
     const A = center(l.a), B = center(l.b); if (!A || !B) continue;
     const mx = (A[0] + B[0]) / 2, my = (A[1] + B[1]) / 2;
@@ -2068,6 +2149,7 @@ new ResizeObserver(() => {
 }).observe(boardEl);
 function deleteSelection() {
   const b = board(); if (!S.sel.size) return;
+  if (S.sel.size >= 5) takeSnapshot(`Before removing ${S.sel.size} things from a board`);
   const ids = S.sel; let back = 0;
   b.cards = b.cards.filter(c => { if (ids.has(c.id)) { if (c.hl) back++; return false; } return true; });
   b.zones = b.zones.filter(z => !ids.has(z.id));
@@ -2773,10 +2855,7 @@ function imageCardEl(c) {
   return e;
 }
 /* Images nothing points at any more (deleted cards from earlier visits) are cleared on start. */
-async function cleanImages() {
-  const used = new Set(imageIdsInUse());
-  for (const k of await DB.keys('images')) if (!used.has(k)) DB.req('images', 'readwrite', st => st.delete(k));
-}
+async function cleanImages() { await ageOut('images', new Set(imageIdsInUse()), 'imgOrphans', 61); }
 $('#imgBtn').onclick = () => $('#imgIn').click();
 $('#imgIn').addEventListener('change', e => { const f = [...e.target.files]; e.target.value = ''; if (f.length) { if (NARROW()) setView('board'); addImages(f, null); } });
 
@@ -3121,6 +3200,7 @@ $('#boardMenuBtn').onclick = e => {
   m.style.left = clamp(r.left, 8, innerWidth - mr.width - 8) + 'px'; m.style.top = (r.bottom + 6) + 'px';
 };
 $('#bDel').onclick = e => twoStep(e.currentTarget, 'Yes, delete it', () => {
+  takeSnapshot('Before deleting a board');
   const b = board(); S.boards = S.boards.filter(x => x.id !== b.id); DB.del('boards', b.id);
   S.boardId = (S.boards.find(x => x.docId === S.doc) || S.boards[0]).id; LS.set('board', S.boardId); $('#boardMenu').hidden = true;
   renderBoardSel(); renderBoard(); renderTray(); toast('Board deleted. Your highlights are still in the PDFs.');
@@ -3131,7 +3211,7 @@ document.addEventListener('pointerdown', e => {
 });
 
 /* ---------- backup ---------- */
-function openModal() { $('#modal').hidden = false; renderBackupStatus(); renderStorageInfo(); $('#mClose').focus(); }
+function openModal() { $('#modal').hidden = false; renderBackupStatus(); renderStorageInfo(); renderSnaps(); $('#mClose').focus(); }
 function closeModal() { $('#modal').hidden = true; }
 $('#backupBtn').onclick = () => { $('#boardMenu').hidden = true; openModal(); };
 $('#themeBtn').onclick = () => { toggleTheme(); };
@@ -3163,7 +3243,7 @@ function bkRel(t) {
   return new Date(t).toLocaleDateString();
 }
 function scheduleBackup() {
-  if (BK.restoring) return;
+  if (BK.restoring || TAB.stopped) return;
   BK.pending = true; renderBackupStatus();
   if (BK.state === 'on') later('autobackup', runBackup, 1800);
 }
@@ -3180,7 +3260,7 @@ async function writeFile(dir, name, data) {
   const w = await fh.createWritable(); await w.write(data); await w.close();
 }
 async function runBackup() {
-  if (BK.state !== 'on' || !BK.handle) return;
+  if (BK.state !== 'on' || !BK.handle || TAB.stopped) return;
   if (BK.busy) { BK.again = true; return; }
   BK.busy = true; renderBackupStatus();
   try {
@@ -3206,8 +3286,19 @@ async function runBackup() {
     }
     const json = JSON.stringify(backupData());
     await writeFile(dir, 'sift-data.json', json);
+    // history: the latest of each day, plus the first save of each hour for the last two days
     const hist = await dir.getDirectoryHandle('history', { create: true });
-    await writeFile(hist, `sift-data-${new Date().toISOString().slice(0, 10)}.json`, json);
+    const now = new Date(), day = localDay(now);
+    await writeFile(hist, `sift-data-${day}.json`, json);
+    const hourly = await hist.getDirectoryHandle('hourly', { create: true });
+    const hn = `sift-data-${day}-${String(now.getHours()).padStart(2, '0')}h.json`;
+    if (BK.lastHourly !== hn) {
+      let exists = false; try { await hourly.getFileHandle(hn); exists = true; } catch (e) {}
+      if (!exists) await writeFile(hourly, hn, json);
+      BK.lastHourly = hn;
+    }
+    try { await writeNotes(dir); } catch (e) { console.warn('notes', e); }
+    if (!BK.tidied) { BK.tidied = true; try { await writeFile(dir, 'README.txt', BACKUP_README); await pruneHistory(hist, hourly); } catch (e) { console.warn('tidy', e); } }
     BK.last = Date.now(); BK.pending = false;
     DB.put('meta', { k: 'backupLast', v: BK.last });
   } catch (e) {
@@ -3217,6 +3308,73 @@ async function runBackup() {
   }
   BK.busy = false; renderBackupStatus();
   if (BK.again) { BK.again = false; later('autobackup', runBackup, 400); }
+}
+function localDay(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+const BACKUP_README = `Sift backup folder
+==================
+
+Sift keeps this folder up to date by itself while you work.
+
+sift-data.json   Your PDF list, highlights and boards. This is what "Restore from a backup folder" reads.
+pdfs/            Your PDFs.
+images/          Images placed on boards.
+notes/           Every board as a Markdown file, with all of that PDF's highlights in page order.
+                 Readable in any text editor or notes app. Sift rewrites these as you work.
+history/         Earlier copies of sift-data.json: the last one of each day (kept for 180 days,
+                 and the first of every month for good), and in history/hourly/ the first one
+                 of every hour for the last two days.
+
+To bring everything back on a new computer or browser:
+  open Sift > Backup & restore > Restore from a backup folder, and pick this folder.
+
+To go back to a particular day:
+  open Sift > Backup & restore > Restore from a backup file, and pick that day's file in history/.
+
+Restoring only adds and updates. It never deletes anything that is already in Sift.
+`;
+function safeFileName(n) { return (String(n || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/^\.+/, '').slice(0, 80)) || 'Board'; }
+/* Markdown copies of every board, so the work can be read without Sift. */
+function notesFor(b) {
+  let md = boardMarkdown(b).trimEnd();
+  const hs = S.hls.filter(h => h.docId === b.docId).sort((a, c) => a.page - c.page || (a.rects[0] || [0, 0])[1] - (c.rects[0] || [0, 0])[1]);
+  if (hs.length) {
+    md += `\n\n---\n\n## All highlights in this PDF, in page order\n\n`;
+    md += hs.map(h => `- p. ${h.page}: ${h.text.replace(/\s+/g, ' ').trim()}${h.note ? `\n  - Note: ${h.note.replace(/\s+/g, ' ').trim()}` : ''}`).join('\n');
+  }
+  return md + '\n';
+}
+async function writeNotes(dir) {
+  const nd = await dir.getDirectoryHandle('notes', { create: true });
+  if (!BK.notes) {
+    BK.notes = new Map();
+    for await (const [name, h] of nd.entries()) if (h.kind === 'file' && /\.md$/i.test(name)) BK.notes.set(name, null);
+  }
+  const want = new Map();
+  for (const b of S.boards) {
+    if (!b.cards.length && !b.zones.length && !S.hls.some(h => h.docId === b.docId)) continue;
+    let name = safeFileName(b.name) + '.md';
+    if (want.has(name)) name = safeFileName(b.name) + ' ' + String(b.id).slice(0, 5) + '.md';
+    want.set(name, notesFor(b));
+  }
+  for (const [name, text] of want) if (BK.notes.get(name) !== text) { await writeFile(nd, name, text); BK.notes.set(name, text); }
+  // copies of boards that were renamed or deleted
+  for (const name of [...BK.notes.keys()]) if (!want.has(name)) { try { await nd.removeEntry(name); } catch (e) {} BK.notes.delete(name); }
+}
+async function pruneHistory(hist, hourly) {
+  const now = Date.now(), drop = [];
+  for await (const [name] of hourly.entries()) {
+    const m = name.match(/^sift-data-(\d{4})-(\d\d)-(\d\d)-(\d\d)h\.json$/); if (!m) continue;
+    if (now - new Date(+m[1], m[2] - 1, +m[3], +m[4]).getTime() > 48 * 3600e3) drop.push([hourly, name]);
+  }
+  const daily = [];
+  for await (const [name] of hist.entries()) {
+    const m = name.match(/^sift-data-(\d{4})-(\d\d)-(\d\d)\.json$/); if (m) daily.push({ name, t: new Date(+m[1], m[2] - 1, +m[3]).getTime(), month: m[1] + m[2] });
+  }
+  daily.sort((a, b) => a.t - b.t);
+  const firstOfMonth = new Set();
+  for (const d of daily) if (![...firstOfMonth].some(n => n.slice(10, 17) === d.name.slice(10, 17))) firstOfMonth.add(d.name);
+  for (const d of daily) if (now - d.t > 180 * 864e5 && !firstOfMonth.has(d.name)) drop.push([hist, d.name]);
+  for (const [dir, name] of drop) { try { await dir.removeEntry(name); } catch (e) {} }
 }
 async function readBackupFolder(dir) {
   let data = null;
@@ -3233,7 +3391,7 @@ async function readBackupFolder(dir) {
   return { data, getPdf, getImage };
 }
 async function useFolder(dir, { restoreFirst = true } = {}) {
-  BK.handle = dir; BK.names = null; BK.imgNames = null;
+  BK.handle = dir; BK.names = null; BK.imgNames = null; BK.notes = null; BK.tidied = false; BK.lastHourly = null;
   await DB.put('meta', { k: 'backupDir', v: dir });
   if (restoreFirst) {
     const found = await readBackupFolder(dir);
@@ -3303,12 +3461,23 @@ function renderBackupStatus() {
   $('#bkOff').hidden = !(on || BK.state === 'paused' || BK.state === 'missing');
   $('#bkRestoreDir').hidden = !BK.supported;
   $('#bkTip').hidden = BK.state === 'unsupported';
+  const bt = $('#braveTip');
+  if (bt) {
+    bt.hidden = !navigator.brave;
+    bt.textContent = (BK.state === 'unsupported' ? 'Using Brave: automatic backup is switched off in Brave by default. To turn it on, open brave://flags/#file-system-access-api, set it to Enabled and relaunch Brave. ' : 'Using Brave: ') +
+      'If Brave is set to clear site data when it closes, add this site as an exception (Settings › Privacy and security › Site and Shields settings › Cookies and site data), or your library is cleared each time.';
+  }
+  checkBackupReminder();
 }
 setInterval(renderBackupStatus, 30000);
 
 /* ---------- restore ---------- */
 async function restoreData(data, getPdf, { quiet = false, getImage = null } = {}) {
   if (!data || data.app !== 'sift-reader') { toast('That isn\'t a Sift backup.'); return; }
+  flushLater();
+  await takeSnapshot('Before restoring a backup');
+  const clean = sanitizeData({ docs: data.docs, hls: data.highlights, boards: data.boards });
+  data = { ...data, docs: clean.docs, highlights: clean.hls, boards: clean.boards };
   BK.restoring = true;
   let nh = 0, nb = 0, nf = 0;
   try {
@@ -3392,7 +3561,7 @@ async function fullBackupBlob() {
   parts.push('}}');
   return new Blob(parts, { type: 'application/json' });
 }
-$('#bkSave').onclick = async () => {
+async function saveFullBackup() {
   const btn = $('#bkSave'); btn.disabled = true; const label = btn.textContent; btn.textContent = 'Preparing…';
   try {
     const blob = await fullBackupBlob();
@@ -3400,14 +3569,17 @@ $('#bkSave').onclick = async () => {
     const url = URL.createObjectURL(blob);
     const a = el('a'); a.href = url; a.setAttribute('download', filename);
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 8000);
-    BK.lastFile = Date.now();
+    BK.lastFile = Date.now(); DB.req('meta', 'readwrite', o => o.put({ k: 'backupFileLast', v: BK.lastFile }));
+    dropNotice('remind');
+    toast('Backup file saved. Keep it somewhere safe, like a cloud drive.', 3200);
   } catch (e) { toast('The backup file could not be made. Try again.'); }
   finally { btn.disabled = false; btn.textContent = label; }
-};
+}
+$('#bkSave').onclick = saveFullBackup;
 $('#bkFile').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) restoreFromFile(f); });
 $('#bkPick').onclick = () => pickFolder();
 $('#bkResume').onclick = () => resumeBackup();
-$('#bkNow').onclick = () => { BK.names = null; BK.imgNames = null; runBackup().then(() => toast('Backed up.', 1600)); };
+$('#bkNow').onclick = () => { BK.names = null; BK.imgNames = null; BK.notes = null; runBackup().then(() => toast('Backed up.', 1600)); };
 $('#bkOff').onclick = async () => { BK.state = BK.supported ? 'off' : 'unsupported'; BK.handle = null; await DB.del('meta', 'backupDir'); renderBackupStatus(); toast('Automatic backup is off. Files already in the folder stay there.'); };
 $('#bkRestoreDir').onclick = () => restoreFromFolder();
 $('#bkChip').onclick = () => { if (BK.state === 'paused') resumeBackup(); else openModal(); };
@@ -3466,15 +3638,375 @@ $('#emSample').onclick = () => {
   addFiles([new File([bytes], 'Reading to Learn (sample).pdf', { type: 'application/pdf' })]);
 };
 
+/* ---------- keeping work safe ----------
+   Earlier versions, one tab at a time, save checks and reminders. Nothing here ever deletes
+   highlights or boards on its own; old copies are only cleared once they are well past their keep date. */
+
+/* notices: calm messages at the top that stay until dealt with */
+function notice(id, { tone = 'calm', title, text, actions = [] }) {
+  let n = $(`#notices .notice[data-id="${id}"]`);
+  if (!n) { n = el('div', 'notice'); n.dataset.id = id; $('#notices').appendChild(n); }
+  n.dataset.tone = tone; n.textContent = '';
+  const t = el('div', 'n-text'); if (title) t.appendChild(el('b', null, title)); if (text) t.appendChild(el('span', null, text));
+  const a = el('div', 'n-acts');
+  actions.forEach(([label, fn], i) => {
+    const b = el('button', 'btn' + (i === 0 ? ' primary' : ' ghost'), label); b.type = 'button';
+    b.onclick = () => fn(b); a.appendChild(b);
+  });
+  n.append(t, a);
+  return n;
+}
+function dropNotice(id) { const n = $(`#notices .notice[data-id="${id}"]`); if (n) n.remove(); }
+function hasNotice(id) { return !!$(`#notices .notice[data-id="${id}"]`); }
+
+/* ---------- earlier versions ---------- */
+function hashStr(str) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return (h >>> 0).toString(36) + '.' + str.length.toString(36);
+}
+// what counts as a change worth a new version: not scrolling, zoom or where the board was panned to
+function contentHash() {
+  return hashStr(JSON.stringify([
+    S.docs.map(d => [d.id, d.name]),
+    S.hls,
+    S.boards.map(b => [b.id, b.name, b.docId, b.cards, b.zones, b.links])
+  ]));
+}
+async function packText(str) {
+  if (typeof CompressionStream === 'function') {
+    try { return { z: 'gzip', data: await new Response(new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'))).blob() }; } catch (e) {}
+  }
+  return { z: '', data: str };
+}
+async function unpackText(rec) {
+  if (rec.z === 'gzip') return new Response(rec.data.stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  return rec.data;
+}
+function hasWork() { return S.hls.length > 0 || S.boards.some(b => b.cards.length || b.zones.length); }
+/* The state is captured the moment this is called, so "before X" copies really are from before X. */
+function takeSnapshot(reason, { force = false, minGap = 0 } = {}) {
+  if (!S.dbOk || !DB.db || TAB.stopped || !hasWork()) return Promise.resolve(false);
+  const hash = contentHash();
+  if (!force && hash === SNAP.lastHash) { SNAP.dirty = false; return Promise.resolve(false); }
+  // a run of the same action (erasing one highlight after another) keeps the copy from before the first
+  if (!force && minGap && SNAP.lastReason === reason && Date.now() - SNAP.lastT < minGap) return Promise.resolve(false);
+  const json = JSON.stringify({ docs: S.docs, highlights: S.hls, boards: S.boards });
+  const n = { docs: S.docs.length, hls: S.hls.length, boards: S.boards.filter(b => b.cards.length || b.zones.length).length, cards: S.boards.reduce((k, b) => k + b.cards.length, 0) };
+  let t = Date.now(); if (t <= SNAP.lastT) t = SNAP.lastT + 1;
+  SNAP.lastT = t; SNAP.lastHash = hash; SNAP.dirty = false; SNAP.lastReason = reason;
+  SNAP.chain = SNAP.chain.then(async () => {
+    const packed = await packText(json);
+    const rec = { t, reason, hash, n, ...packed };
+    let ok = await DB.req('snaps', 'readwrite', o => o.put(rec));
+    if (ok == null && packed.z) ok = await DB.req('snaps', 'readwrite', o => o.put({ ...rec, z: '', data: json }));
+    if (ok == null) { SNAP.lastHash = ''; return false; }
+    await pruneSnaps();
+    return true;
+  }).catch(() => false);
+  return SNAP.chain;
+}
+/* Keep the 24 newest, and the last one of every day for 60 days. */
+async function pruneSnaps() {
+  const keys = (await DB.keys('snaps')).sort((a, b) => b - a);
+  const keep = new Set(keys.slice(0, 24)), days = new Set(), cutoff = Date.now() - 60 * 864e5;
+  for (const t of keys) { const d = new Date(t).toDateString(); if (t >= cutoff && !days.has(d)) { days.add(d); keep.add(t); } }
+  const drop = keys.filter(t => !keep.has(t));
+  if (drop.length) await DB.req('snaps', 'readwrite', o => { drop.forEach(t => o.delete(t)); });
+}
+async function latestSnapshotHash() {
+  const keys = await DB.keys('snaps'); if (!keys.length) return '';
+  const t = Math.max(...keys); const rec = await DB.get('snaps', t);
+  SNAP.lastT = t; return (rec && rec.hash) || '';
+}
+function whenLabel(t) {
+  const d = new Date(t), now = new Date();
+  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (d.toDateString() === now.toDateString()) return `Today ${time}`;
+  const y = new Date(now); y.setDate(now.getDate() - 1);
+  if (d.toDateString() === y.toDateString()) return `Yesterday ${time}`;
+  return d.toLocaleDateString([], { day: 'numeric', month: 'short', year: d.getFullYear() === now.getFullYear() ? undefined : 'numeric' }) + ' ' + time;
+}
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+async function renderSnaps() {
+  const ul = $('#snapList'); if (!ul) return;
+  const recs = (await DB.all('snaps')).sort((a, b) => b.t - a.t);
+  ul.textContent = '';
+  if (!recs.length) { ul.appendChild(el('li', 'empty', S.dbOk ? 'No earlier versions yet. The first one is made as soon as there is something to keep.' : 'This browser window is blocking storage, so there are no earlier versions.')); return; }
+  for (const r of recs) {
+    const li = el('li'); li.dataset.t = r.t;
+    li.appendChild(el('span', 's-when', whenLabel(r.t)));
+    const n = r.n || {};
+    const what = el('span', 's-what', `${plural(n.hls || 0, 'highlight')} · ${plural(n.cards || 0, 'card')}${r.reason ? ' · ' + r.reason : ''}`);
+    what.title = what.textContent; li.appendChild(what);
+    const b = el('button', 'btn', 'Go back'); b.type = 'button';
+    b.onclick = () => twoStep(b, 'Sure?', () => restoreSnapshot(r.t));
+    li.appendChild(b); ul.appendChild(li);
+  }
+}
+async function restoreSnapshot(t, { undoing = false } = {}) {
+  const rec = await DB.get('snaps', t);
+  let data = null;
+  try { data = rec && JSON.parse(await unpackText(rec)); } catch (e) {}
+  if (!data || !Array.isArray(data.highlights) || !Array.isArray(data.boards)) { toast('That version could not be read.'); return; }
+  flushLater();
+  await takeSnapshot(undoing ? 'Before undoing a restore' : 'Before going back to an earlier version', { force: true });
+  const before = SNAP.lastT;
+  const clean = sanitizeData({ docs: data.docs || [], hls: data.highlights, boards: data.boards });
+  BK.restoring = true;
+  let ok = true;
+  try {
+    for (const d of clean.docs) if (!S.docs.some(x => x.id === d.id)) { S.docs.push(d); ok = (await DB.put('docs', d)) != null && ok; }
+    ok = (await DB.replace('hls', clean.hls)) && ok;
+    ok = (await DB.replace('boards', clean.boards)) && ok;
+    S.hls = clean.hls; S.boards = clean.boards;
+    S.haveFile = new Set(await DB.keys('files'));
+  } finally { BK.restoring = false; }
+  for (const k of Object.keys(HIST)) delete HIST[k];
+  splitBoardsByDoc();
+  if (!S.boards.length) { const b = seedBoard(); S.boards.push(b); DB.put('boards', b); }
+  const cur = S.boards.find(b => b.id === S.boardId) || (S.doc && S.boards.find(b => b.docId === S.doc)) || S.boards[0];
+  S.boardId = cur.id; LS.set('board', S.boardId); S.sel = new Set();
+  SNAP.lastHash = contentHash();
+  renderLibrary(); renderBoardSel(); renderTrayDocs(); renderBoard(); renderTray();
+  if (S.doc) for (const n of rendered.keys()) redrawPage(n);
+  scheduleBackup();
+  if (!$('#modal').hidden) renderSnaps();
+  if (!ok) { toast('Some of it could not be saved. See the notice at the top.'); return; }
+  if (undoing) { toast('Back to where you were.', 2200); return; }
+  toastAction(`Went back to the version from ${whenLabel(t).replace(/^(Today|Yesterday)/, s => s.toLowerCase())}.`, 'Undo', () => restoreSnapshot(before, { undoing: true }), 10000);
+}
+// a version is kept every ten minutes while something changes, and when the tab is put away
+setInterval(() => { if (SNAP.dirty && Date.now() - SNAP.lastT > 10 * 60e3) takeSnapshot('While you worked'); }, 60e3);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && SNAP.dirty && Date.now() - SNAP.lastT > 2 * 60e3) takeSnapshot('While you worked'); });
+
+/* ---------- checking stored data ----------
+   Anything malformed (from an old version, a bug, a half-written record) is repaired or set aside,
+   so one bad card can't stop the rest from opening. */
+function sanitizeData({ docs, hls, boards }) {
+  const num = (v, d = 0) => (typeof v === 'number' && Number.isFinite(v) ? v : (Number.isFinite(+v) && v !== null && v !== '' ? +v : d));
+  const str = (v, d = '') => (typeof v === 'string' ? v : v == null ? d : String(v));
+  const outDocs = [], seenD = new Set();
+  for (const d of docs || []) {
+    if (!d || typeof d !== 'object' || d.id == null || seenD.has(d.id)) continue;
+    seenD.add(d.id); d.name = str(d.name, 'Untitled') || 'Untitled'; d.pages = num(d.pages, 1); outDocs.push(d);
+  }
+  const outH = [], seenH = new Set();
+  for (const h of hls || []) {
+    if (!h || typeof h !== 'object' || h.id == null || seenH.has(h.id) || h.docId == null) continue;
+    const rects = Array.isArray(h.rects) ? h.rects.filter(r => Array.isArray(r) && r.length >= 4 && r.slice(0, 4).every(x => Number.isFinite(+x))) : [];
+    if (!rects.length) continue;
+    seenH.add(h.id); h.rects = rects; h.text = str(h.text); h.page = Math.max(1, Math.round(num(h.page, 1)));
+    if (h.note != null && typeof h.note !== 'string') h.note = str(h.note);
+    outH.push(h);
+  }
+  const outB = [], seenB = new Set();
+  for (const b of boards || []) {
+    if (!b || typeof b !== 'object' || b.id == null || seenB.has(b.id)) continue;
+    seenB.add(b.id);
+    b.name = str(b.name, 'Board') || 'Board';
+    const v = b.view || {};
+    b.view = { x: num(v.x, 60), y: num(v.y, 90), z: num(v.z, 1) > 0.02 && num(v.z, 1) < 50 ? num(v.z, 1) : 1 };
+    const ids = new Set();
+    b.cards = (Array.isArray(b.cards) ? b.cards : []).filter(c => {
+      if (!c || typeof c !== 'object' || c.id == null || ids.has(c.id)) return false;
+      ids.add(c.id); c.x = num(c.x); c.y = num(c.y);
+      if (c.w != null) c.w = Math.max(40, num(c.w, 300));
+      if (c.text != null && typeof c.text !== 'string') c.text = str(c.text);
+      return true;
+    });
+    b.zones = (Array.isArray(b.zones) ? b.zones : []).filter(z => {
+      if (!z || typeof z !== 'object' || z.id == null || ids.has(z.id)) return false;
+      ids.add(z.id); z.x = num(z.x); z.y = num(z.y); z.w = Math.max(20, num(z.w, 300)); z.h = Math.max(20, num(z.h, 200));
+      return true;
+    });
+    b.links = (Array.isArray(b.links) ? b.links : []).filter(l => l && l.id != null && ids.has(l.a) && ids.has(l.b));
+    outB.push(b);
+  }
+  return { docs: outDocs, hls: outH, boards: outB };
+}
+/* Removed PDFs and images nothing uses any more stay stored for a while, so Undo and earlier
+   versions can still bring them back. They are cleared once they have been unused for `days`. */
+async function ageOut(store, used, metaKey, days) {
+  const rec = await DB.get('meta', metaKey); const map = (rec && rec.v) || {};
+  const keys = await DB.keys(store), now = Date.now();
+  let changed = false;
+  const present = new Set(keys);
+  for (const k of keys) {
+    if (used.has(k)) { if (map[k]) { delete map[k]; changed = true; } continue; }
+    if (!map[k]) { map[k] = now; changed = true; }
+    else if (now - map[k] > days * 864e5) { await DB.req(store, 'readwrite', o => o.delete(k)); delete map[k]; changed = true; }
+  }
+  for (const k of Object.keys(map)) if (!present.has(k)) { delete map[k]; changed = true; }
+  if (changed) DB.req('meta', 'readwrite', o => o.put({ k: metaKey, v: map }));
+}
+
+/* ---------- one tab at a time ----------
+   Two tabs would each keep their own copy in memory and save over each other.
+   The tab that holds the lock works; another one waits until it's asked to take over. */
+function showGate(mode, onUse) {
+  const g = $('#gate'), use = $('#gateUse');
+  const text = {
+    other: ['Sift is open in another tab', 'To keep one tab from saving over the other, Sift works in one tab at a time. Your work is safe.', 'Use Sift here'],
+    moved: ['Sift moved to another tab', 'Everything you did here is saved. To keep working in this tab, take it back.', 'Use Sift here'],
+    blocked: ['Finishing an update', 'An older Sift tab is still open. Close it (or reload it) and this one carries on. Nothing is lost.', ''],
+    updated: ['Sift was updated', 'A newer version opened in another tab. Everything is saved. Reload to continue here.', 'Reload'],
+    error: ['Sift couldn\'t open your library', 'Your highlights and boards are still stored in this browser. Nothing was deleted. Reload to try again; if it keeps happening, your backup folder or file has everything.', 'Reload']
+  }[mode];
+  g.dataset.mode = mode; g.hidden = false;
+  $('#gateTitle').textContent = text[0]; $('#gateText').textContent = text[1];
+  use.hidden = !text[2]; use.textContent = text[2]; use.disabled = false;
+  use.onclick = onUse || (() => location.reload());
+}
+function hideGate(mode) { const g = $('#gate'); if (!mode || g.dataset.mode === mode) g.hidden = true; }
+document.addEventListener('keydown', e => { if (!$('#gate').hidden) { e.stopImmediatePropagation(); if (e.key !== 'Tab' && e.key !== 'Enter' && e.key !== ' ') e.preventDefault(); } }, true);
+function tabChannel() {
+  if (!TAB.ch && 'BroadcastChannel' in window) {
+    try {
+      TAB.ch = new BroadcastChannel('sift-tabs');
+      TAB.ch.onmessage = e => { if (e.data && e.data.type === 'takeover' && TAB.release) handOver(); };
+    } catch (e) {}
+  }
+  return TAB.ch;
+}
+function lockOnce(opts) {
+  // resolves true once this tab holds the lock (kept until handOver), false if it is taken
+  return new Promise(res => {
+    try {
+      navigator.locks.request('sift-main', opts, lock => {
+        if (!lock) { res(false); return; }
+        res(true);
+        return new Promise(r => { TAB.release = r; });
+      }).catch(() => res(true));
+    } catch (e) { res(true); }
+  });
+}
+async function claimTab() {
+  if (!navigator.locks || !navigator.locks.request) return;
+  tabChannel();
+  if (await lockOnce({ ifAvailable: true })) return;
+  await new Promise(res => showGate('other', () => { $('#gateUse').disabled = true; $('#gateText').textContent = 'Taking over…'; res(); }));
+  const got = lockOnce({});
+  try { TAB.ch && TAB.ch.postMessage({ type: 'takeover' }); } catch (e) {}
+  const slow = setTimeout(() => { $('#gateText').textContent = 'The other Sift tab isn\'t answering. Switch to it for a moment, or close it, and this tab carries on.'; }, 4000);
+  await got; clearTimeout(slow);
+  hideGate('other');
+}
+async function handOver() {
+  if (TAB.stopped) return;
+  flushLater();
+  // a read-write step queues behind every save still running, so once it's done they all are
+  await DB.req('meta', 'readwrite', o => o.get('backupLast'));
+  TAB.stopped = true;
+  try { DB.db && DB.db.close(); } catch (e) {} DB.db = null;
+  dropNotice('save');
+  const r = TAB.release; TAB.release = null; if (r) r();
+  showGate('moved', () => {
+    $('#gateUse').disabled = true; $('#gateText').textContent = 'Taking over…';
+    try {
+      navigator.locks.request('sift-main', () => {}).then(() => location.reload());
+      TAB.ch && TAB.ch.postMessage({ type: 'takeover' });
+    } catch (e) { location.reload(); }
+  });
+}
+
+/* ---------- save checks ---------- */
+function renderSaveAlert() {
+  if (!S.dbOk || TAB.stopped) { dropNotice('save'); return; }
+  const stuck = [...DB.failed.values()].filter(f => !f.pending).length;
+  if (!stuck) {
+    if (hasNotice('save')) { dropNotice('save'); toast('Saved. Everything is stored again.', 2400); }
+    return;
+  }
+  const full = DB.lastError === 'QuotaExceededError';
+  notice('save', {
+    tone: 'warn',
+    title: full ? 'The browser has no room left to save' : 'Sift couldn\'t save your latest changes',
+    text: full
+      ? 'Your recent changes are still here on screen. Save a backup file now, then make room: remove PDFs you\'ve finished with, or free up disk space.'
+      : 'They are still here on screen and Sift keeps trying. Keep this tab open, and save a backup file to be safe.',
+    actions: [['Save backup file', () => saveFullBackup()], ['Try again', async b => { b.disabled = true; const ok = await DB.retry(); b.disabled = false; if (!ok) toast('Still not saving. Save a backup file to be safe.'); }]]
+  });
+  later('dbretry', () => DB.retry(), 15000);
+}
+async function checkStorage() {
+  try {
+    if (!navigator.storage || !navigator.storage.estimate) return;
+    const { usage, quota } = await navigator.storage.estimate();
+    if (!quota || usage / quota < 0.85) { dropNotice('space'); return; }
+    const mb = v => (v / 1048576 > 1024 ? (v / 1073741824).toFixed(1) + ' GB' : Math.round(v / 1048576) + ' MB');
+    notice('space', {
+      tone: 'warn', title: 'Browser storage is almost full',
+      text: `Sift is using ${mb(usage)} of the ${mb(quota)} this browser allows. Remove PDFs you've finished with, or free up disk space, before it runs out.`,
+      actions: [['OK', () => dropNotice('space')]]
+    });
+  } catch (e) {}
+}
+/* A calm nudge while there's work and nothing outside the browser holds a copy of it. */
+function checkBackupReminder() {
+  if (!S.dbOk || TAB.stopped || !S.ready) return;
+  const work = S.hls.length;
+  const lastCopy = Math.max(BK.last || 0, BK.lastFile || 0);
+  const quiet = BK.state === 'on' || work < 3 || Date.now() < LS.get('remindUntil', 0) ||
+    (BK.state === 'paused' && Date.now() - lastCopy < 3 * 864e5) ||
+    (BK.state === 'unsupported' && Date.now() - lastCopy < 7 * 864e5);
+  if (quiet) { dropNotice('remind'); return; }
+  const later3 = ['Later', () => { LS.set('remindUntil', Date.now() + 3 * 864e5); dropNotice('remind'); }];
+  if (BK.state === 'unsupported') {
+    notice('remind', {
+      title: lastCopy ? 'Time for a fresh backup' : 'Your work is only in this browser',
+      text: (navigator.brave ? 'If browser data is cleared, it\'s gone. In Brave, automatic backup needs one setting (see Backup & restore). Until then, save a backup file now and then.' : 'If browser data is cleared, it\'s gone. Save a backup file now and then; it has everything, PDFs included.'),
+      actions: [['Save backup file', () => saveFullBackup()], ...(navigator.brave ? [['How to turn on', () => openModal()]] : []), later3]
+    });
+  } else if (BK.state === 'missing') {
+    notice('remind', { tone: 'warn', title: 'Sift can\'t find your backup folder', text: 'It may have been moved or renamed. Choose it again so your work keeps being copied there.', actions: [['Choose folder', () => pickFolder()], later3] });
+  } else if (BK.state === 'paused') {
+    notice('remind', { title: 'Backup is paused', text: 'Your browser needs one click to let Sift keep copying your work to the backup folder.', actions: [['Resume backup', () => resumeBackup()], later3] });
+  } else {
+    notice('remind', {
+      title: 'Your work is only in this browser',
+      text: 'If browser data is cleared, it\'s gone. Pick a folder once, and Sift keeps a copy of everything there, PDFs included.',
+      actions: [['Turn on backup', () => pickFolder()], later3]
+    });
+  }
+}
+setInterval(() => { checkStorage(); checkBackupReminder(); }, 10 * 60e3);
+
+/* ---------- unexpected errors ---------- */
+let lastErrNotice = 0;
+function onAppError() {
+  if (Date.now() - lastErrNotice < 60e3 || !S.ready) return;
+  lastErrNotice = Date.now();
+  notice('err', {
+    tone: 'warn', title: 'Something went wrong on this page',
+    text: 'Your saved work is not affected. If anything looks off, reload the page.',
+    actions: [['Reload', () => { flushLater(); location.reload(); }], ['Dismiss', () => dropNotice('err')]]
+  });
+}
+addEventListener('error', e => {
+  if (!e.filename || !e.filename.startsWith(location.origin) || /ResizeObserver/.test(e.message || '')) return;
+  onAppError();
+});
+
 /* ---------- start ---------- */
 async function init() {
+  await claimTab();
   { const hid = LS.get('libHidden', true); $('#app').classList.toggle('lib-hidden', hid); $('#libToggle').setAttribute('aria-label', hid ? 'Show library' : 'Hide library'); }
   setView('read');
   S.dbOk = await DB.open();
   if (S.dbOk) {
-    [S.docs, S.hls, S.boards] = await Promise.all([DB.all('docs'), DB.all('hls'), DB.all('boards')]);
+    const loaded = await Promise.all([DB.allStrict('docs'), DB.allStrict('hls'), DB.allStrict('boards')]);
+    // if reading failed, stop here rather than start empty and save over the library
+    if (!loaded.every(Array.isArray)) throw new Error('library could not be read');
+    S.docs = loaded[0]; S.hls = loaded[1]; S.boards = loaded[2];
     S.haveFile = new Set(await DB.keys('files'));
+    // a copy exactly as stored, before anything below tidies or moves it
+    SNAP.lastHash = await latestSnapshotHash();
+    await takeSnapshot('When Sift was opened');
+    Object.assign(S, sanitizeData({ docs: S.docs, hls: S.hls, boards: S.boards }));
     cleanImages();
+    ageOut('files', new Set(S.docs.map(d => d.id)), 'fileTrash', 30);
+    { const f = await DB.get('meta', 'backupFileLast'); BK.lastFile = f ? f.v : 0; }
     try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
   }
   $('#storeNote').textContent = S.dbOk
@@ -3495,8 +4027,10 @@ async function init() {
   const last = LS.get('doc', null);
   if (last && S.haveFile.has(last)) openDoc(last);
   if (NARROW()) setView('read');
+  S.ready = true;
+  checkStorage(); setTimeout(checkBackupReminder, 4000);
 }
-init();
+init().catch(e => { console.error(e); showGate('error'); });
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
 </script>

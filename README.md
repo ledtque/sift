@@ -12,9 +12,15 @@ Everything runs in the browser. PDFs, highlights and boards are stored on your o
 
 PDFs are copied into the browser when you add them, so deleting the original file from your computer doesn't affect Sift.
 
-- **Automatic backup (Chrome, Edge):** open Backup & restore (the "Turn on backup" button above the reader) and choose a folder. After every change Sift writes `sift-data.json`, a dated copy in `history/`, and each PDF in `pdfs/` and each board image in `images/`. Pick a folder inside Google Drive, OneDrive, Dropbox or iCloud Drive to keep it in the cloud as well.
+- **Automatic backup (Chrome, Edge):** open Backup & restore (the "Turn on backup" button above the reader) and choose a folder. After every change Sift writes `sift-data.json`, each PDF in `pdfs/` and each board image in `images/`. `history/` keeps the last copy of every day (for 180 days, and the first of each month for good) and, in `history/hourly/`, the first copy of each hour for the last two days. `notes/` has every board as a Markdown file, with all of that PDF's highlights in page order, so the work can be read without Sift. Pick a folder inside Google Drive, OneDrive, Dropbox or iCloud Drive to keep it in the cloud as well.
+- **Earlier versions:** Sift also keeps copies inside the browser: when it opens, every ten minutes while something changes, and before anything big is removed (erasing, deleting a board, removing a PDF, restoring). Backup & restore → *Earlier versions* goes back to one; what you have at that moment is kept as a version first, so going back can be undone too. The 24 newest are kept, and the last one of each day for 60 days.
 - **New computer or browser:** Backup & restore → *Restore from a backup folder*, and pick the same folder.
-- **Any browser:** *Save full backup file* makes one file with everything, PDFs included.
+- **Any browser:** *Save full backup file* makes one file with everything, PDFs included. Without a backup folder, Sift reminds you now and then.
+- **Brave:** automatic backup needs `brave://flags/#file-system-access-api` set to Enabled. If Brave clears site data when it closes, add this site as an exception, or the library is cleared each time.
+- **One tab at a time:** if Sift is opened in a second tab, that tab waits and offers to take over, so two tabs never save over each other.
+- **Save problems are shown:** if the browser refuses to save (for example when its storage is full), a notice says so, Sift keeps trying, and the work stays on screen until it is saved.
+- **Removing a PDF** can be undone, and the file stays stored for 30 days so an earlier version can bring it back.
+- Your data lives with the site's address. If the address ever changes, move the library with a backup folder or file.
 - The site works offline once it has been opened, and can be installed as an app from the browser's address bar.
 
 ## Reading
