@@ -20,6 +20,7 @@ PDFs are copied into the browser when you add them, so deleting the original fil
 ## Reading
 
 - Select text and press **1–4** (or pick a color) to highlight it. The highlight lands on the PDF's board right away, where you can see it.
+- **Eraser** (or **E**): click a highlight, or drag across several, to remove them along with their cards on the board. **Undo** on the notice, or Ctrl+Z, brings them back. Esc puts the eraser away.
 - **Contents** (list icon) jumps through the PDF's own table of contents, when it has one.
 - **Ctrl+F** finds text in the PDF, with next/previous and every match marked on the page.
 - **Ctrl + scroll** zooms the PDF. Each PDF remembers its zoom and the page you stopped on.
