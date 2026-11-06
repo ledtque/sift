@@ -25,12 +25,19 @@ PDFs are copied into the browser when you add them, so deleting the original fil
 
 ## Reading
 
-- Select text and press **1–4** (or pick a color) to highlight it. The highlight lands on the PDF's board right away, where you can see it.
+- Select text and press **1–4** (or pick a color) to highlight it. The highlight lands on the PDF's board right away, where you can see it. A selection can run on into the next page.
+- **Clip** (or **C**): drag a box around a figure, a table, a formula, or text on a scanned page that can't be selected. That part of the page goes onto the board as a sharp image, linked to its page; any text inside it is kept for searching.
+- **Highlights** (or **L**): every highlight and clip in the PDF, in page order and under its chapter, with search and filters by color, notes or clips. Click one to jump to it. Small marks beside the scrollbar show where the highlights are.
 - **Eraser** (or **E**): click a highlight, or drag across several, to remove them along with their cards on the board. **Undo** on the notice, or Ctrl+Z, brings them back. Esc puts the eraser away.
 - **Contents** (list icon) jumps through the PDF's own table of contents, when it has one.
 - **Ctrl+F** finds text in the PDF, with next/previous and every match marked on the page.
-- **Ctrl + scroll** zooms the PDF. Each PDF remembers its zoom and the page you stopped on.
+- **Ctrl + scroll**, or a two-finger pinch, zooms the PDF. Each PDF remembers its zoom and the page you stopped on.
+- **⋯ → Dark PDF pages** turns the pages dark for reading at night.
 - Click the PDF's name to rename it. Its board takes the same name.
+
+## Library
+
+Each PDF shows its pages, highlights and how far you've read. The **⋯** next to a PDF marks it as finished, puts it in a collection (the library groups PDFs by collection), or removes it. With two or more PDFs you can sort them (last opened, newest, A–Z, progress) and show only those you're reading, haven't started, or finished.
 
 ## The board
 
@@ -41,6 +48,10 @@ Every PDF has its own board. Cards show the full highlight; double-click a card 
 **Minimap:** the small map in the bottom-right corner shows the whole board and where you are. Click or drag on it to move around; press **M** to hide or show it.
 
 **Layouts:** the switch at the top right shows the PDF only, the PDF and the board side by side, or the board only (**Alt+1 / Alt+2 / Alt+3**). Highlights you make with the board hidden are still added to it. **F** puts the whole window in full screen, whatever the layout. **Ctrl+F** over the board finds cards. **⋯ → Export as PNG** saves the board as an image (only the selected cards, if any are selected), and **Copy as PNG** puts it on the clipboard. **⋯ → Export as Markdown** saves the board as notes for Obsidian, Notion and the like. Press **?** for all shortcuts.
+
+**Topic boards:** every PDF has its own board; a topic board gathers cards from several PDFs. Make one with **⋯ → New topic board**, or select cards and use **Copy to a topic board** in the side panel. While a topic board is open, new highlights land on it as well as on their PDF's board. Switch boards with the button at the top left of the board. Cards keep their source, so a click still opens the page they came from.
+
+**Arranging:** with several things selected, the side panel can align them or space them out evenly. Double-click a connection (or select it and click the **T** beside it) to write on it, such as "contradicts" or "example of".
 
 | Key | Action |
 | --- | --- |
