@@ -112,6 +112,23 @@ svg.i.s{width:16px;height:16px}
 .doc .doc-rm{opacity:0;width:26px;height:26px}
 .doc:hover .doc-rm,.doc .doc-rm:focus-visible,.doc.confirm .doc-rm{opacity:1}
 .doc.confirm .doc-rm{width:auto;padding:0 8px;font-size:12px;color:var(--sp)}
+.lib-tools{display:flex;gap:6px;margin:0 12px 6px}
+.lib-tools select{flex:1;min-width:0;height:30px;border:1px solid var(--line);border-radius:8px;background:var(--input);color:var(--muted);font:inherit;font-size:12.5px;padding:0 6px;cursor:pointer}
+.lib-group{display:flex;align-items:center;gap:6px;width:100%;border:0;background:transparent;padding:12px 8px 4px;font-size:11.5px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;cursor:pointer;text-align:left}
+.lib-group:hover{color:var(--muted)}
+.lib-group svg{transition:transform .12s;flex:none}
+.lib-group[aria-expanded="false"] svg{transform:rotate(-90deg)}
+.lib-group .n{margin-left:auto;font-weight:600}
+.doc .doc-more{opacity:0;width:26px;height:26px;font-size:16px;letter-spacing:1px}
+.doc:hover .doc-more,.doc .doc-more:focus-visible,.doc.menu .doc-more{opacity:1}
+.doc-meta .done{color:var(--sg);font-weight:700}
+.doc-bar{grid-column:2;height:2px;border-radius:2px;background:var(--line);margin-top:4px;overflow:hidden}
+.doc-bar i{display:block;height:100%;background:var(--accent);opacity:.55}
+.doc-pop{width:230px}
+.doc-pop .sep{height:1px;background:var(--line);margin:4px 2px}
+.doc-pop .dp-head{font-size:11.5px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;padding:8px 9px 4px}
+.doc-pop .mi.on::after{content:"✓";float:right;color:var(--accent)}
+.doc-pop input{width:100%;box-sizing:border-box;height:32px;border:1px solid var(--accent);border-radius:8px;background:var(--input);padding:0 9px;font:inherit;font-size:13px;color:var(--fg);margin:2px 0 4px}
 .lib-empty{color:var(--faint);font-family:var(--f-hand);font-size:15px;padding:8px 10px;line-height:1.5}
 .lib-foot{padding:10px 18px 14px}
 .fine{font-size:12px;color:var(--faint);margin:0;line-height:1.5}
@@ -126,6 +143,15 @@ svg.i.s{width:16px;height:16px}
 .title:not([readonly]):focus{outline:2px solid var(--accent);outline-offset:0;background:var(--bg)}
 .title[readonly]{cursor:default}
 #reader{flex:0 0 var(--split,50%);min-width:300px;display:flex;flex-direction:column;min-height:0;background:var(--bg-soft);position:relative}
+.hl-rail{position:absolute;right:1px;width:9px;z-index:6;pointer-events:none}
+.hl-rail i{position:absolute;left:1px;right:1px;height:3px;border-radius:2px;pointer-events:auto;cursor:pointer;opacity:.95;box-shadow:0 0 0 .5px rgba(0,0,0,.25)}
+.hl-rail i:hover{left:-3px;right:-1px;height:5px;margin-top:-1px}
+.hl-rail i[data-c=y]{background:#fcc419} .hl-rail i[data-c=g]{background:#51cf66} .hl-rail i[data-c=p]{background:#ff8787} .hl-rail i[data-c=b]{background:#4dabf7}
+#reader:has(.hl-panel:not([hidden])) .hl-rail{display:none}
+#app.night-pages .page canvas{filter:invert(.92) hue-rotate(180deg) brightness(1.02) contrast(.92)}
+#app.night-pages .page{background:#1b1b1f}
+#app.night-pages .mark-r:not(.mark-area){mix-blend-mode:normal;opacity:.38}
+#app.night-pages .hp-thumb{filter:none}
 .hl-panel{position:absolute;top:56px;right:10px;bottom:10px;width:min(340px,calc(100% - 20px));z-index:8;background:var(--island);border-radius:12px;box-shadow:var(--island-shadow);display:flex;flex-direction:column;min-height:0}
 .hl-panel[hidden]{display:none}
 .hp-head{display:flex;align-items:center;gap:8px;padding:10px 8px 4px 14px;font-size:14px}
@@ -600,7 +626,7 @@ body:has(#modal:not([hidden])) #notices,body:has(#gate:not([hidden])) #notices{d
   #tabs{grid-area:tabs;display:flex;padding:8px max(16px,env(safe-area-inset-left,0px)) 8px max(16px,env(safe-area-inset-right,0px));gap:6px;background:var(--bg);border-top:1px solid var(--line)}
   #tabs button{flex:1;border:0;background:transparent;padding:9px 6px;border-radius:8px;font-weight:600;font-size:13.5px;color:var(--muted);cursor:pointer}
   #tabs button[aria-current="true"]{background:var(--accent-soft);color:var(--fg)}
-  .card .handle,.card .crm,.zone .zrm,.doc .doc-rm,.t-meta button,.zone .grip{opacity:1}
+  .card .handle,.card .crm,.zone .zrm,.doc .doc-rm,.doc .doc-more,.t-meta button,.zone .grip{opacity:1}
   #tray{top:58px;left:8px;bottom:8px}
 }
 @media (prefers-reduced-motion: reduce){
@@ -658,6 +684,10 @@ body:has(#modal:not([hidden])) #notices,body:has(#gate:not([hidden])) #notices{d
     </div>
     <input id="fileIn" type="file" accept="application/pdf,.pdf" multiple hidden>
     <div class="lib-search" id="libSearchWrap" hidden><svg class="i s" aria-hidden="true"><use href="#i-search"/></svg><input id="libSearch" type="text" placeholder="Search PDFs" aria-label="Search PDFs" autocomplete="off"></div>
+    <div id="libTools" class="lib-tools" hidden>
+      <select id="libSort" aria-label="Sort PDFs"><option value="recent">Last opened</option><option value="added">Newest</option><option value="name">A–Z</option><option value="progress">Progress</option></select>
+      <select id="libShow" aria-label="Show"><option value="all">All</option><option value="reading">Reading</option><option value="new">Not started</option><option value="done">Finished</option></select>
+    </div>
     <ul id="docList"></ul>
     <div class="lib-foot"><p id="storeNote" class="fine"></p><span id="libCount" hidden></span></div>
   </aside>
@@ -700,6 +730,7 @@ body:has(#modal:not([hidden])) #notices,body:has(#gate:not([hidden])) #notices{d
         </div>
         <ul id="hpList" class="hp-list"></ul>
       </aside>
+      <div id="hlRail" class="hl-rail" hidden aria-hidden="true"></div>
       <div id="scroller">
         <div id="pages"></div>
         <div id="readerEmpty">
@@ -834,6 +865,8 @@ body:has(#modal:not([hidden])) #notices,body:has(#gate:not([hidden])) #notices{d
 </div>
 
 
+<div id="docPop" class="pop doc-pop" hidden role="dialog" aria-label="PDF options"></div>
+
 <div id="tocPop" class="pop toc-pop" hidden role="dialog" aria-label="Contents"><div id="tocList"></div></div>
 
 <div id="boardsPop" class="pop boards-pop" hidden role="dialog" aria-label="Boards">
@@ -857,6 +890,7 @@ body:has(#modal:not([hidden])) #notices,body:has(#gate:not([hidden])) #notices{d
   <div class="sep"></div>
   <button id="backupBtn" class="mi" type="button">Backup &amp; restore</button>
   <button id="themeBtn" class="mi" type="button">Switch light / dark</button>
+  <button id="nightBtn" class="mi" type="button" aria-pressed="false">Dark PDF pages: off</button>
   <button id="helpBtn" class="mi" type="button">Keyboard shortcuts<kbd>?</kbd></button>
 </div>
 
@@ -1130,10 +1164,14 @@ async function loadPdf(bytes) {
 }
 
 /* ---------- library ---------- */
+function docProgress(d) { return d.pages > 1 && d.furthest ? Math.min(1, d.furthest / d.pages) : 0; }
+function docState(d) { return d.status === 'done' ? 'done' : (d.opened ? 'reading' : 'new'); }
 function renderLibrary() {
   try { renderHlPanel(); } catch (e) {}
+  try { renderRail(); } catch (e) {}
   const ul = $('#docList'); ul.textContent = '';
   $('#libCount').textContent = S.docs.length || '';
+  $('#libTools').hidden = S.docs.length < 2;
   if (!S.docs.length) {
     ul.appendChild(el('li', 'lib-empty', 'No PDFs yet. Add a few, or drop them anywhere on this page.'));
     return;
@@ -1142,36 +1180,96 @@ function renderLibrary() {
   for (const h of S.hls) counts[h.docId] = (counts[h.docId] || 0) + 1;
   $('#libSearchWrap').hidden = S.docs.length < 6;
   const q = S.docs.length >= 6 ? $('#libSearch').value.trim().toLowerCase() : '';
-  const docs = [...S.docs].sort((a, b) => (b.opened || b.added) - (a.opened || a.added)).filter(d => !q || d.name.toLowerCase().includes(q));
-  if (!docs.length) ul.appendChild(el('li', 'lib-empty', 'No PDF matches that name.'));
-  for (const d of docs) {
+  const sort = $('#libSort').value, show = $('#libShow').value;
+  const cmp = {
+    recent: (a, b) => (b.opened || b.added) - (a.opened || a.added),
+    added: (a, b) => (b.added || 0) - (a.added || 0),
+    name: (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }),
+    progress: (a, b) => (docState(a) === 'done') - (docState(b) === 'done') || docProgress(b) - docProgress(a)
+  }[sort] || ((a, b) => 0);
+  const docs = [...S.docs].sort(cmp).filter(d => (!q || d.name.toLowerCase().includes(q)) && (show === 'all' || docState(d) === show));
+  if (!docs.length) { ul.appendChild(el('li', 'lib-empty', q ? 'No PDF matches that name.' : 'No PDFs here.')); return; }
+  const cols = [...new Set(docs.map(d => d.col).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  const collapsed = new Set(LS.get('libCollapsed', []));
+  const row = d => {
     const has = S.haveFile.has(d.id) || memFiles.has(d.id);
     const li = el('li', 'doc' + (d.id === S.doc ? ' on' : '') + (has ? '' : ' missing'));
     li.dataset.id = d.id;
     const b = el('button', 'doc-open'); b.type = 'button';
     b.insertAdjacentHTML('beforeend', '<svg class="i s"><use href="#i-pdf"/></svg>');
     b.append(el('span', 'doc-name', d.name));
-    const n = counts[d.id] || 0;
-    b.append(el('span', 'doc-meta', has ? `${d.pages} pp · ${n} highlight${n === 1 ? '' : 's'}` : 'File not here. Add it again.'));
-    const rm = el('button', 'doc-rm icon-btn', '×'); rm.type = 'button'; rm.setAttribute('aria-label', 'Remove ' + d.name);
-    li.append(b, rm); ul.appendChild(li);
-  }
+    const n = counts[d.id] || 0, meta = el('span', 'doc-meta');
+    if (!has) meta.textContent = 'File not here. Add it again.';
+    else {
+      const pct = Math.round(docProgress(d) * 100);
+      meta.textContent = `${d.pages} pp · ${n} highlight${n === 1 ? '' : 's'}` + (docState(d) !== 'done' && pct > 1 ? ` · ${pct}%` : '');
+      if (docState(d) === 'done') { meta.append(' · '); meta.appendChild(el('span', 'done', 'Finished')); }
+    }
+    b.append(meta);
+    if (has && docState(d) === 'reading' && docProgress(d) > 0.01) { const bar = el('span', 'doc-bar'); const i = el('i'); i.style.width = Math.round(docProgress(d) * 100) + '%'; bar.appendChild(i); b.appendChild(bar); }
+    const more = el('button', 'doc-more icon-btn', '⋯'); more.type = 'button'; more.setAttribute('aria-label', 'Options for ' + d.name); more.title = 'Options';
+    li.append(b, more); return li;
+  };
+  const group = (name, key, list) => {
+    const open = !collapsed.has(key);
+    const h = el('button', 'lib-group'); h.type = 'button'; h.dataset.key = key; h.setAttribute('aria-expanded', String(open));
+    h.insertAdjacentHTML('beforeend', '<svg class="i s"><use href="#i-down"/></svg>');
+    h.append(el('span', null, name), el('span', 'n', String(list.length)));
+    const li = el('li'); li.appendChild(h); ul.appendChild(li);
+    if (open) list.forEach(d => ul.appendChild(row(d)));
+  };
+  if (!cols.length) { docs.forEach(d => ul.appendChild(row(d))); return; }
+  for (const c of cols) group(c, 'c:' + c, docs.filter(d => d.col === c));
+  const rest = docs.filter(d => !d.col);
+  if (rest.length) group('Not in a collection', 'none', rest);
 }
+$('#libSort').value = LS.get('libSort', 'recent'); $('#libShow').value = LS.get('libShow', 'all');
+$('#libSort').addEventListener('change', e => { LS.set('libSort', e.target.value); renderLibrary(); });
+$('#libShow').addEventListener('change', e => { LS.set('libShow', e.target.value); renderLibrary(); });
 $('#docList').addEventListener('click', e => {
+  const g = e.target.closest('.lib-group');
+  if (g) {
+    const set = new Set(LS.get('libCollapsed', [])); const k = g.dataset.key;
+    if (set.has(k)) set.delete(k); else set.add(k);
+    LS.set('libCollapsed', [...set]); renderLibrary(); return;
+  }
   const li = e.target.closest('.doc'); if (!li) return;
   const id = li.dataset.id;
-  if (e.target.closest('.doc-rm')) {
-    const btn = e.target.closest('.doc-rm');
-    li.classList.add('confirm');
-    twoStep(btn, 'Remove', () => removeDoc(id));
-    setTimeout(() => li.isConnected && li.classList.remove('confirm'), 3300);
-    return;
-  }
+  if (e.target.closest('.doc-more')) { openDocPop(id, e.target.closest('.doc-more')); return; }
   if (e.target.closest('.doc-open')) {
     if (!S.haveFile.has(id) && !memFiles.has(id)) { toast('This PDF isn\'t stored here. Add the file again and its highlights reconnect.'); return; }
     openDoc(id);
   }
 });
+function saveDoc(d) { DB.put('docs', d); renderLibrary(); }
+function openDocPop(id, anchor) {
+  const pop = $('#docPop'), d = S.docs.find(x => x.id === id); if (!d) return;
+  if (!pop.hidden && pop.dataset.id === id) { pop.hidden = true; return; }
+  pop.dataset.id = id; pop.textContent = '';
+  const mi = (label, fn, cls) => { const b = el('button', 'mi' + (cls ? ' ' + cls : ''), label); b.type = 'button'; b.onclick = () => fn(b); pop.appendChild(b); return b; };
+  mi(d.status === 'done' ? 'Mark as reading' : 'Mark as finished', () => { d.status = d.status === 'done' ? undefined : 'done'; if (!d.status) delete d.status; pop.hidden = true; saveDoc(d); });
+  pop.appendChild(el('div', 'sep'));
+  pop.appendChild(el('div', 'dp-head', 'Collection'));
+  const cols = [...new Set(S.docs.map(x => x.col).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  for (const c of cols) mi(c, () => { d.col = c; pop.hidden = true; saveDoc(d); }, d.col === c ? 'on' : '');
+  const nb = mi('New collection…', () => {
+    const inp = el('input'); inp.type = 'text'; inp.placeholder = 'Collection name'; inp.setAttribute('aria-label', 'Collection name');
+    nb.replaceWith(inp); inp.focus();
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); pop.hidden = true; }
+      if (e.key === 'Enter') { e.preventDefault(); const v = inp.value.trim().slice(0, 60); if (v) { d.col = v; saveDoc(d); } pop.hidden = true; }
+    });
+  });
+  if (d.col) mi('Take out of "' + d.col + '"', () => { delete d.col; pop.hidden = true; saveDoc(d); });
+  pop.appendChild(el('div', 'sep'));
+  mi('Remove from library', b => twoStep(b, 'Yes, remove it', () => { pop.hidden = true; removeDoc(id); }));
+  const li = anchor.closest('.doc'); li.classList.add('menu');
+  const r = anchor.getBoundingClientRect();
+  pop.hidden = false; const pr = pop.getBoundingClientRect();
+  pop.style.left = clamp(r.right - pr.width, 8, innerWidth - pr.width - 8) + 'px';
+  pop.style.top = clamp(r.bottom + 4, 8, innerHeight - pr.height - 8) + 'px';
+}
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#docPop,.doc-more')) { $('#docPop').hidden = true; $$('.doc.menu').forEach(x => x.classList.remove('menu')); } });
 /* The file itself stays stored for 30 days, so Undo and earlier versions can bring it back. */
 async function removeDoc(id) {
   const d = S.docs.find(x => x.id === id); if (!d) return;
@@ -1305,6 +1403,7 @@ function buildShells() {
   }
   pagesEl.appendChild(frag);
   $$('.page', pagesEl).forEach(p => io.observe(p));
+  requestAnimationFrame(renderRail);
 }
 function onIO(entries) {
   for (const e of entries) {
@@ -1375,7 +1474,13 @@ scroller.addEventListener('scroll', () => {
     const n = currentPage();
     if (document.activeElement !== $('#pageIn')) $('#pageIn').value = n;
     const d = S.docs.find(d => d.id === S.doc);
-    if (d && d.lastPage !== n) { d.lastPage = n; later('lastpage', () => DB.req('docs', 'readwrite', st => st.put(d)), 900); }
+    if (d && d.lastPage !== n) {
+      d.lastPage = n;
+      const bottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 40;
+      const reached = bottom ? S.pdf.numPages : n;
+      if (reached > (d.furthest || 0)) { d.furthest = reached; later('libprogress', renderLibrary, 1500); }
+      later('lastpage', () => DB.req('docs', 'readwrite', st => st.put(d)), 900);
+    }
     hidePop($('#hlPop'));
   });
 }, { passive: true });
@@ -4395,6 +4500,38 @@ const renameTopic = () => {
 $('#bpName').addEventListener('input', () => later('topicname', renameTopic, 300));
 $('#bpName').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); renameTopic(); $('#boardsPop').hidden = true; } });
 document.addEventListener('pointerdown', e => { if (!e.target.closest('#boardsPop,#boardSwitch,#props [data-act="send"]')) { if (!$('#boardsPop').hidden) { renameTopic(); $('#boardsPop').hidden = true; } } });
+
+/* ---------- marks beside the scrollbar: where this PDF's highlights are ---------- */
+function renderRail() {
+  const rail = $('#hlRail');
+  if (!S.pdf || !pagesEl.children.length) { rail.hidden = true; return; }
+  const mine = S.hls.filter(h => h.docId === S.doc);
+  rail.hidden = !mine.length; if (!mine.length) return;
+  rail.style.top = scroller.offsetTop + 'px'; rail.style.height = scroller.clientHeight + 'px';
+  const total = scroller.scrollHeight || 1, H = scroller.clientHeight;
+  rail.textContent = '';
+  const used = [];
+  for (const h of mine) {
+    const p = pageEl(h.page); if (!p) continue;
+    const r = rectsOn(h, h.page)[0] || [0, 0, 0, 0];
+    const y = Math.round(((p.offsetTop + r[1] * p.offsetHeight) / total) * (H - 4));
+    if (used.some(u => Math.abs(u - y) < 3)) continue;
+    used.push(y);
+    const t = el('i'); t.dataset.c = h.color; t.dataset.id = h.id; t.style.top = y + 'px';
+    t.title = `p. ${h.page}: ${h.area ? 'clipped area' : h.text.slice(0, 80)}`;
+    rail.appendChild(t);
+  }
+}
+$('#hlRail').addEventListener('click', e => { const t = e.target.closest('i'); const h = t && hlById(t.dataset.id); if (h) goToSource(h); });
+new ResizeObserver(() => later('rail', renderRail, 150)).observe(scroller);
+
+/* ---------- night reading: dark PDF pages ---------- */
+function setNightPages(on) {
+  $('#app').classList.toggle('night-pages', on); LS.set('nightPages', on);
+  const b = $('#nightBtn'); if (b) { b.setAttribute('aria-pressed', String(on)); b.textContent = 'Dark PDF pages: ' + (on ? 'on' : 'off'); }
+}
+setNightPages(LS.get('nightPages', false));
+$('#nightBtn').onclick = () => { setNightPages(!$('#app').classList.contains('night-pages')); $('#boardMenu').hidden = true; };
 
 /* ---------- start ---------- */
 async function init() {
