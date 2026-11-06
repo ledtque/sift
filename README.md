@@ -29,7 +29,7 @@ PDFs are copied into the browser when you add them, so deleting the original fil
 
 Every PDF has its own board. Cards show the full highlight; double-click a card to edit its text (the PDF keeps the original), and drag the handle on its right edge to change its width. The bar above a selected card sets its color and text size.
 
-Press **F** for full screen. **Ctrl+F** over the board finds cards. **⋯ → Export as Markdown** saves the board as notes for Obsidian, Notion and the like. Press **?** for all shortcuts.
+Press **F** for full screen. **Ctrl+F** over the board finds cards. **⋯ → Export as PNG** saves the board as an image (only the selected cards, if any are selected), and **Copy as PNG** puts it on the clipboard. **⋯ → Export as Markdown** saves the board as notes for Obsidian, Notion and the like. Press **?** for all shortcuts.
 
 | Key | Action |
 | --- | --- |
@@ -46,6 +46,8 @@ Press **F** for full screen. **Ctrl+F** over the board finds cards. **⋯ → Ex
 | Ctrl+Z / Ctrl+Shift+Z | Undo / redo |
 | Ctrl+= / Ctrl+- / Ctrl+0 | Zoom in, out, 100% |
 | Shift+1 | Fit everything |
+| Ctrl+Shift+E | Export as PNG |
+| Shift+Alt+C | Copy as PNG |
 | Arrow keys | Nudge selection (Shift for bigger steps) |
 | F | Full screen board, and back |
 | Esc | Clear selection |

@@ -640,6 +640,8 @@ svg.i.s{width:16px;height:16px}
 
 <div id="boardMenu" class="pop" hidden role="dialog" aria-label="Board options">
   <button id="bfMenu" class="mi" type="button">Find on this board<kbd>Ctrl F</kbd></button>
+  <button id="exportPng" class="mi" type="button">Export as PNG<kbd>Ctrl Shift E</kbd></button>
+  <button id="copyPng" class="mi" type="button">Copy as PNG<kbd>Shift Alt C</kbd></button>
   <button id="exportMd" class="mi" type="button">Export as Markdown</button>
   <button id="recallBtn" class="mi" type="button" aria-pressed="false">Recall mode: off</button>
   <div class="sep"></div>
@@ -717,6 +719,8 @@ svg.i.s{width:16px;height:16px}
           <dt><kbd>Ctrl</kbd> <kbd>+</kbd> / <kbd>−</kbd></dt><dd>Zoom in, out</dd>
           <dt><kbd>Ctrl</kbd> <kbd>0</kbd></dt><dd>Zoom to 100%</dd>
           <dt><kbd>Shift</kbd> <kbd>1</kbd></dt><dd>Fit everything</dd>
+          <dt><kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>E</kbd></dt><dd>Export as PNG</dd>
+          <dt><kbd>Shift</kbd> <kbd>Alt</kbd> <kbd>C</kbd></dt><dd>Copy as PNG</dd>
           <dt><kbd>Esc</kbd></dt><dd>Clear selection</dd>
         </dl>
       </section>
@@ -2198,6 +2202,159 @@ $('#exportMd').onclick = () => {
   toast('Exported. The file works in Obsidian, Notion and most note apps.', 2600);
 };
 
+/* ---------- export the board as an image ----------
+   Draws the board onto a canvas from what is on screen: every word is placed where the browser
+   laid it out, so the picture matches the board exactly. Exports the selection if there is one. */
+function wordsOf(el, toWorldRect) {
+  const out = [];
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const range = document.createRange();
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const re = /\S+/g; let m;
+    while ((m = re.exec(node.data))) {
+      range.setStart(node, m.index); range.setEnd(node, m.index + m[0].length);
+      const rects = range.getClientRects();
+      if (rects.length === 1) { out.push({ text: m[0], ...toWorldRect(rects[0]) }); continue; }
+      // a word split across lines (a very long word): place it piece by piece
+      let start = m.index;
+      for (let i = m.index + 1; i <= m.index + m[0].length; i++) {
+        range.setStart(node, start); range.setEnd(node, i);
+        const rs = range.getClientRects();
+        if (rs.length > 1 || i === m.index + m[0].length) {
+          const end = rs.length > 1 ? i - 1 : i;
+          range.setEnd(node, end);
+          const r = range.getClientRects()[0];
+          if (r) out.push({ text: node.data.slice(start, end), ...toWorldRect(r) });
+          start = end;
+        }
+      }
+    }
+  }
+  return out;
+}
+function roundRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) { ctx.roundRect(x, y, w, h, r); return; }
+  r = Math.min(r, w / 2, h / 2);
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+async function boardCanvas({ selectionOnly = true, background = true } = {}) {
+  const b = board(); if (!b) return null;
+  try { await Promise.all([document.fonts.load('16px Virgil'), document.fonts.ready]); } catch (e) {}
+  const useSel = selectionOnly && S.sel.size > 0;
+  const cards = b.cards.filter(c => !useSel || S.sel.has(c.id));
+  const zones = b.zones.filter(z => !useSel || S.sel.has(z.id));
+  if (!cards.length && !zones.length) return null;
+  const ids = new Set(cards.map(c => c.id));
+  const v = b.view, br = boardEl.getBoundingClientRect();
+  const ox = br.left + v.x, oy = br.top + v.y;
+  const toW = r => ({ x: (r.left - ox) / v.z, y: (r.top - oy) / v.z, w: r.width / v.z, h: r.height / v.z });
+
+  // what to draw, measured from the page
+  const items = [];
+  for (const z of zones) {
+    const e = world.querySelector(`.zone[data-id="${z.id}"]`); if (!e) continue;
+    items.push({ kind: 'zone', x: z.x, y: z.y, w: z.w, h: z.h, color: getComputedStyle(e, '::before').borderTopColor });
+  }
+  for (const c of cards) {
+    const e = world.querySelector(`.card[data-id="${c.id}"]`); if (!e) continue;
+    const t = e.querySelector('.card-text'); const cs = getComputedStyle(t);
+    const box = toW(t.getBoundingClientRect());
+    const card = { kind: 'card', ...box, radius: parseFloat(cs.borderTopLeftRadius) || 9, border: parseFloat(cs.borderTopWidth) || 1.75,
+      stroke: cs.borderTopColor, fill: cs.backgroundColor, color: cs.color,
+      font: `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`, words: wordsOf(t, toW), notes: [] };
+    const n = e.querySelector('.card-note');
+    if (n) { const ns = getComputedStyle(n); card.notes.push({ color: ns.color, font: `${ns.fontStyle} ${ns.fontWeight} ${ns.fontSize} ${ns.fontFamily}`, words: wordsOf(n, toW), ...toW(n.getBoundingClientRect()) }); }
+    items.push(card);
+  }
+  const links = [];
+  for (const l of b.links) {
+    if (!ids.has(l.a) || !ids.has(l.b)) continue;
+    const hit = linksSvg.querySelector(`.lk-hit[data-link="${l.id}"]`); if (!hit) continue;
+    links.push(hit.getAttribute('d'));
+  }
+  const linkStyle = (() => { const p = linksSvg.querySelector('.lk:not(.on)') || linksSvg.querySelector('.lk'); const cs = p ? getComputedStyle(p) : null; return { color: cs ? cs.stroke : '#1e1e1e', opacity: cs ? +cs.opacity : 0.85 }; })();
+
+  // size of the picture
+  const PAD = 40;
+  const boxes = items.map(i => [i.x, i.y, i.x + i.w, i.y + i.h + (i.notes ? i.notes.reduce((m, n) => Math.max(m, n.y + n.h - i.y - i.h), 0) : 0)]);
+  const x0 = Math.min(...boxes.map(r => r[0])) - PAD, y0 = Math.min(...boxes.map(r => r[1])) - PAD;
+  const x1 = Math.max(...boxes.map(r => r[2])) + PAD, y1 = Math.max(...boxes.map(r => r[3])) + PAD;
+  const W = x1 - x0, H = y1 - y0;
+  const scale = Math.max(0.25, Math.min(2, 8000 / W, 8000 / H, Math.sqrt(32e6 / (W * H))));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(W * scale); canvas.height = Math.ceil(H * scale);
+  const ctx = canvas.getContext('2d');
+  ctx.scale(scale, scale); ctx.translate(-x0, -y0);
+  if (background) { ctx.fillStyle = getComputedStyle(boardEl).backgroundColor || '#ffffff'; ctx.fillRect(x0, y0, W, H); }
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  // connections first, under everything, drawn as two loose strokes like on the board
+  ctx.strokeStyle = linkStyle.color;
+  for (const d of links) {
+    const p = new Path2D(d);
+    ctx.globalAlpha = linkStyle.opacity; ctx.lineWidth = 2; ctx.stroke(p);
+    ctx.save(); ctx.translate(1.5, -1); ctx.globalAlpha = linkStyle.opacity * 0.5; ctx.lineWidth = 1; ctx.stroke(p); ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+  const drawWords = (words, font, color) => {
+    ctx.font = font; ctx.fillStyle = color; ctx.textBaseline = 'middle';
+    for (const w of words) ctx.fillText(w.text, w.x, w.y + w.h / 2);
+  };
+  for (const i of items) {
+    if (i.kind === 'zone') {
+      ctx.strokeStyle = i.color;
+      ctx.lineWidth = 2; roundRectPath(ctx, i.x, i.y, i.w, i.h, 12); ctx.stroke();
+      ctx.globalAlpha = 0.55; ctx.lineWidth = 1; roundRectPath(ctx, i.x + 1, i.y + 2, i.w + 1, i.h - 1, 13); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+  for (const i of items) {
+    if (i.kind !== 'card') continue;
+    const inset = i.border / 2;
+    roundRectPath(ctx, i.x + inset, i.y + inset, i.w - i.border, i.h - i.border, i.radius);
+    if (i.fill && i.fill !== 'rgba(0, 0, 0, 0)') { ctx.fillStyle = i.fill; ctx.fill(); }
+    ctx.strokeStyle = i.stroke; ctx.lineWidth = i.border; ctx.stroke();
+    drawWords(i.words, i.font, i.color);
+    for (const n of i.notes) drawWords(n.words, n.font, n.color);
+  }
+  return { canvas, selection: useSel, count: cards.length };
+}
+function canvasBlob(canvas) { return new Promise((res, rej) => canvas.toBlob(b => (b ? res(b) : rej(new Error('empty'))), 'image/png')); }
+async function exportBoardPng() {
+  $('#boardMenu').hidden = true;
+  const out = await boardCanvas(); if (!out) { toast('The board is empty, so there is nothing to export yet.'); return; }
+  const b = board();
+  const name = ((b.name || 'board').replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 80) || 'board') + (out.selection ? ' (selection)' : '');
+  const url = URL.createObjectURL(await canvasBlob(out.canvas));
+  const a = el('a'); a.href = url; a.setAttribute('download', name + '.png');
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 8000);
+  toast(out.selection ? `Exported the ${out.count} selected card${out.count === 1 ? '' : 's'} as an image.` : 'Exported the board as an image.', 2400);
+}
+async function copyBoardPng() {
+  $('#boardMenu').hidden = true;
+  if (!window.ClipboardItem || !navigator.clipboard || !navigator.clipboard.write) { toast('This browser can\'t copy images. Use "Export as PNG" instead.'); return; }
+  try {
+    // Safari wants the promise handed over inside the click, so build the blob inside the item
+    const item = new ClipboardItem({ 'image/png': boardCanvas().then(out => { if (!out) throw new Error('empty'); return canvasBlob(out.canvas); }) });
+    await navigator.clipboard.write([item]);
+    toast(S.sel.size ? 'Selection copied as an image. Paste it anywhere.' : 'Board copied as an image. Paste it anywhere.', 2400);
+  } catch (e) {
+    toast(e && e.message === 'empty' ? 'The board is empty, so there is nothing to copy yet.' : 'The image could not be copied. Use "Export as PNG" instead.');
+  }
+}
+$('#exportPng').onclick = exportBoardPng;
+$('#copyPng').onclick = copyBoardPng;
+document.addEventListener('keydown', e => {
+  const typing = e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"]');
+  if (typing || !e.shiftKey) return;
+  const onBoard = $('#app').classList.contains('focus') || S.overBoard || (NARROW() && $('#app').dataset.view === 'board');
+  if (!onBoard) return;
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && e.code === 'KeyE') { e.preventDefault(); exportBoardPng(); }
+  if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyC') { e.preventDefault(); copyBoardPng(); }
+});
+
 /* ---------- keyboard shortcuts sheet ---------- */
 function openHelp() { $('#boardMenu').hidden = true; $('#helpModal').hidden = false; $('#helpClose').focus(); }
 function closeHelp() { $('#helpModal').hidden = true; }
@@ -2246,7 +2403,7 @@ function pointerWorld() {
 boardEl.addEventListener('pointermove', e => { S.lastPointer = [e.clientX, e.clientY]; });
 document.addEventListener('keydown', e => {
   const typing = e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"]');
-  if (typing || !$('#modal').hidden || !(e.ctrlKey || e.metaKey) || e.altKey) return;
+  if (typing || !$('#modal').hidden || !(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
   const k = e.key.toLowerCase();
   const textSelected = getSelection && !getSelection().isCollapsed;
   if ((k === 'c' || k === 'x') && !textSelected && S.sel.size) {
