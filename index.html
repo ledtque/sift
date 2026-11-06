@@ -125,7 +125,35 @@ svg.i.s{width:16px;height:16px}
 .title:not([readonly]):hover{background:var(--hover)}
 .title:not([readonly]):focus{outline:2px solid var(--accent);outline-offset:0;background:var(--bg)}
 .title[readonly]{cursor:default}
-#reader{flex:0 0 var(--split,50%);min-width:300px;display:flex;flex-direction:column;min-height:0;background:var(--bg-soft)}
+#reader{flex:0 0 var(--split,50%);min-width:300px;display:flex;flex-direction:column;min-height:0;background:var(--bg-soft);position:relative}
+.hl-panel{position:absolute;top:56px;right:10px;bottom:10px;width:min(340px,calc(100% - 20px));z-index:8;background:var(--island);border-radius:12px;box-shadow:var(--island-shadow);display:flex;flex-direction:column;min-height:0}
+.hl-panel[hidden]{display:none}
+.hp-head{display:flex;align-items:center;gap:8px;padding:10px 8px 4px 14px;font-size:14px}
+.hp-count{color:var(--faint);font-size:12.5px}
+.hp-tools{padding:4px 10px 8px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--line)}
+.hp-search{display:flex;align-items:center;gap:6px;background:var(--input);border-radius:8px;padding:0 9px;height:32px;color:var(--faint)}
+.hp-search input{flex:1;border:0;background:transparent;outline:0;font:inherit;font-size:13px;color:var(--fg);min-width:0}
+.hp-filters{display:flex;flex-wrap:wrap;gap:4px}
+.hp-filters button{height:26px;border:0;border-radius:99px;background:transparent;color:var(--muted);font-size:12px;font-weight:600;padding:0 9px;cursor:pointer}
+.hp-filters button:hover{background:var(--hover)}
+.hp-filters button[aria-pressed="true"]{background:var(--accent-soft);color:var(--fg)}
+.hp-filters .hp-dot{width:26px;padding:0;display:grid;place-items:center}
+.hp-dot span,.hp-sw{width:12px;height:12px;border-radius:4px;display:block;flex:none}
+[data-c=y].hp-sw,.hp-dot span[data-c=y]{background:var(--hy)} [data-c=g].hp-sw,.hp-dot span[data-c=g]{background:var(--hg)} [data-c=p].hp-sw,.hp-dot span[data-c=p]{background:var(--hp)} [data-c=b].hp-sw,.hp-dot span[data-c=b]{background:var(--hb)}
+.hp-list{list-style:none;margin:0;padding:6px;overflow:auto;flex:1;min-height:0}
+.hp-chap{font-size:11.5px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;padding:12px 8px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hp-item{display:flex;gap:9px;align-items:flex-start;padding:8px;border-radius:8px;cursor:pointer;font-size:13px;line-height:1.45}
+.hp-item:hover{background:var(--hover)}
+.hp-item.here{box-shadow:inset 2px 0 0 var(--accent)}
+.hp-item .hp-sw{margin-top:4px}
+.hp-body{flex:1;min-width:0}
+.hp-text{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;color:var(--fg)}
+.hp-note{margin-top:4px;color:var(--muted);font-size:12.5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.hp-note::before{content:"✎ ";color:var(--faint)}
+.hp-thumb{display:block;max-width:100%;max-height:110px;border-radius:6px;border:1px solid var(--line);background:#fff}
+.hp-pg{flex:none;color:var(--faint);font-size:11.5px;margin-top:2px}
+.hp-empty{color:var(--muted);font-size:13px;padding:18px 10px;text-align:center;line-height:1.5}
+.hp-item mark{background:var(--accent-soft);color:inherit;border-radius:2px}
 #split{flex:0 0 1px;cursor:col-resize;background:var(--line);position:relative}
 #split::after{content:"";position:absolute;inset:0 -5px;z-index:3}
 #split:hover,#split.drag{background:var(--accent);box-shadow:0 0 0 1px var(--accent)}
@@ -387,6 +415,20 @@ body:has(#modal:not([hidden])) #notices,body:has(#gate:not([hidden])) #notices{d
 .island-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .island-btn:hover{background:var(--hover)}
 .island-btn svg:first-child{margin-right:-4px}
+.board-switch{padding:0 8px 0 12px;margin-left:6px}
+.board-switch svg:first-child{margin-right:0}
+.board-switch svg{opacity:.6}
+.boards-pop{width:260px;max-height:min(70vh,520px);overflow:auto}
+.boards-pop .sep{height:1px;background:var(--line);margin:4px 2px}
+.bp-title{font-size:11.5px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;padding:8px 9px 4px}
+.bp-title:empty{display:none}
+.bp-head{font-size:11.5px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;padding:10px 9px 4px}
+.bp-item{display:flex;align-items:center;gap:8px}
+.bp-item .bp-n{margin-left:auto;color:var(--faint);font-size:12px;flex:none}
+.bp-item span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.bp-item.on{background:var(--accent-soft)}
+.bp-rename{padding:4px 4px 6px}
+.bp-rename input{width:100%;box-sizing:border-box;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--input);padding:0 10px;font:inherit;font-size:14px;font-weight:600;color:var(--fg)}
 .layout-ctl{display:flex;align-items:center;gap:8px;flex:none}
 .layout-seg{display:flex;gap:2px;padding:3px;background:var(--island);box-shadow:var(--island-shadow);border-radius:9px}
 .layout-seg button{width:34px;height:32px;border:0;border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:0}
@@ -532,6 +574,12 @@ body:has(#modal:not([hidden])) #notices,body:has(#gate:not([hidden])) #notices{d
 #scroller.erasing{user-select:none;-webkit-user-select:none}
 #scroller.erasing .textLayer{pointer-events:none}
 #scroller.erasing .page{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 26 26'%3E%3Cg transform='rotate(-45 13 13)'%3E%3Crect x='5' y='9' width='17' height='9' rx='2' fill='white' stroke='%231e1e1e' stroke-width='1.6'/%3E%3Crect x='5' y='9' width='6' height='9' rx='2' fill='%23ff8787' stroke='%231e1e1e' stroke-width='1.6'/%3E%3C/g%3E%3C/svg%3E") 6 20, crosshair}
+#scroller.clipping{user-select:none;-webkit-user-select:none}
+#scroller.clipping .textLayer{pointer-events:none}
+#scroller.clipping .page{cursor:crosshair}
+.clip-box{position:absolute;border:2px dashed var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);border-radius:4px;pointer-events:none;z-index:3}
+.mark-r.mark-area{background:transparent!important;border:2px dashed var(--mk,#4dabf7);border-radius:6px;opacity:.85;box-sizing:border-box}
+.mark-r.mark-area[data-c="y"]{--mk:#f59f00}.mark-r.mark-area[data-c="g"]{--mk:#40c057}.mark-r.mark-area[data-c="p"]{--mk:#f06595}.mark-r.mark-area[data-c="b"]{--mk:#4dabf7}
 .mark-r.erase-hover{opacity:.3;box-shadow:inset 0 0 0 1.5px #e03131}
 .toast.has-action{pointer-events:auto;display:flex;align-items:center;gap:14px}
 .toast-btn{border:0;background:transparent;color:var(--accent);font-weight:700;font-size:13.5px;cursor:pointer;padding:3px 6px;border-radius:6px}
@@ -593,6 +641,10 @@ body:has(#modal:not([hidden])) #notices,body:has(#gate:not([hidden])) #notices{d
   <symbol id="i-dup" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="12" height="12" rx="2"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/></symbol>
   <symbol id="i-eraser" viewBox="0 0 24 24"><path d="M15.6 3.9a1.8 1.8 0 0 1 2.5 0l3 3a1.8 1.8 0 0 1 0 2.5L11.5 19H7.2l-3.3-3.3a1.8 1.8 0 0 1 0-2.5z"/><path d="M9.2 10.3l5.5 5.5M11.5 19H20"/></symbol>
+  <symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2.5V18h15.5"/><path d="M2.5 6H18v15.5"/></symbol>
+  <symbol id="i-hls" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h7"/><rect x="3" y="4.5" width="3" height="3" rx=".8"/><rect x="3" y="10.5" width="3" height="3" rx=".8"/><rect x="3" y="16.5" width="3" height="3" rx=".8"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><rect x="3" y="7" width="11" height="11" rx="2"/><path d="M14 4.5h5.5V10M19.5 4.5 11 13"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
   <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></symbol>
 </svg>
 
@@ -617,8 +669,10 @@ body:has(#modal:not([hidden])) #notices,body:has(#gate:not([hidden])) #notices{d
         <input id="docTitle" class="title" type="text" value="" readonly aria-label="PDF name" spellcheck="false" autocomplete="off">
         <button id="bkChip" class="bk-chip" type="button" data-tone="off"><span class="dot" aria-hidden="true"></span><span id="bkChipText">Turn on backup</span></button>
         <button id="tocBtn" class="icon-btn" type="button" hidden title="Contents" aria-label="Contents"><svg class="i s"><use href="#i-list"/></svg></button>
+        <button id="hlListBtn" class="icon-btn erase-btn" type="button" hidden aria-pressed="false" title="Highlights in this PDF (L)" aria-label="Highlights in this PDF"><svg class="i s"><use href="#i-hls"/></svg></button>
         <button id="findBtn" class="icon-btn" type="button" hidden title="Find in this PDF (Ctrl+F)" aria-label="Find in this PDF"><svg class="i s"><use href="#i-search"/></svg></button>
         <button id="eraseBtn" class="icon-btn erase-btn" type="button" hidden aria-pressed="false" title="Eraser: click or drag over highlights to remove them (E)" aria-label="Eraser"><svg class="i s"><use href="#i-eraser"/></svg></button>
+        <button id="clipBtn" class="icon-btn erase-btn" type="button" hidden aria-pressed="false" title="Clip: drag a box around a figure, table or scanned text to put it on the board (C)" aria-label="Clip an area"><svg class="i s"><use href="#i-crop"/></svg></button>
         <div class="pager" id="pager" hidden><input id="pageIn" inputmode="numeric" aria-label="Page number" value=""><span id="pageTotal">/ 0</span></div>
         <div class="seg" id="zoomSeg" hidden role="group" aria-label="Page zoom"><button id="zOut" type="button" aria-label="Zoom out">−</button><button id="zFit" class="lbl" type="button" title="Fit to width">Fit</button><button id="zIn" type="button" aria-label="Zoom in">+</button></div>
       </div>
@@ -630,6 +684,22 @@ body:has(#modal:not([hidden])) #notices,body:has(#gate:not([hidden])) #notices{d
         <button id="findNext" class="icon-btn" type="button" title="Next (Enter)" aria-label="Next result">↓</button>
         <button id="findClose" class="icon-btn" type="button" title="Close (Esc)" aria-label="Close search">×</button>
       </div>
+      <aside id="hlPanel" class="hl-panel" hidden aria-label="Highlights in this PDF">
+        <div class="hp-head"><b>Highlights</b><span id="hpCount" class="hp-count"></span><span class="spacer"></span><button id="hpClose" class="icon-btn" type="button" aria-label="Close" title="Close (L)">×</button></div>
+        <div class="hp-tools">
+          <div class="hp-search"><svg class="i s" aria-hidden="true"><use href="#i-search"/></svg><input id="hpSearch" type="text" placeholder="Search highlights and notes" aria-label="Search highlights and notes" autocomplete="off" spellcheck="false"></div>
+          <div id="hpFilters" class="hp-filters" role="group" aria-label="Show">
+            <button type="button" data-f="all" aria-pressed="true">All</button>
+            <button type="button" data-f="y" class="hp-dot" aria-pressed="false" aria-label="Yellow"><span data-c="y"></span></button>
+            <button type="button" data-f="g" class="hp-dot" aria-pressed="false" aria-label="Green"><span data-c="g"></span></button>
+            <button type="button" data-f="p" class="hp-dot" aria-pressed="false" aria-label="Pink"><span data-c="p"></span></button>
+            <button type="button" data-f="b" class="hp-dot" aria-pressed="false" aria-label="Blue"><span data-c="b"></span></button>
+            <button type="button" data-f="note" aria-pressed="false">With notes</button>
+            <button type="button" data-f="clip" aria-pressed="false">Clips</button>
+          </div>
+        </div>
+        <ul id="hpList" class="hp-list"></ul>
+      </aside>
       <div id="scroller">
         <div id="pages"></div>
         <div id="readerEmpty">
@@ -648,6 +718,7 @@ body:has(#modal:not([hidden])) #notices,body:has(#gate:not([hidden])) #notices{d
     <section id="boardPane" aria-label="Board">
       <div class="vhead">
         <button id="backToPdf" hidden class="island-btn back" type="button" title="Back to the PDF and board (Alt+2)"><svg class="i s"><use href="#i-back"/></svg><svg class="i s"><use href="#i-pdf"/></svg><span id="backName">PDF</span></button>
+        <button id="boardSwitch" hidden class="island-btn board-switch" type="button" title="Switch board" aria-haspopup="dialog"><span id="boardSwitchName">Board</span><svg class="i s"><use href="#i-down"/></svg></button>
         <span class="spacer"></span>
         <div id="tools" class="tools" role="toolbar" aria-label="Board tools">
           <button class="tool" data-tool="hand" type="button" title="Hand: drag to move around — H, or hold Space" aria-label="Hand tool"><svg class="i s"><use href="#i-hand"/></svg><kbd>H</kbd></button>
@@ -715,6 +786,7 @@ body:has(#modal:not([hidden])) #notices,body:has(#gate:not([hidden])) #notices{d
           </div></section>
           <section class="p-sec" id="pActions"><h4>Actions</h4><div class="p-row">
             <button class="p-btn" data-act="dup" type="button" title="Duplicate (Ctrl+D)" aria-label="Duplicate"><svg class="i s"><use href="#i-dup"/></svg></button>
+            <button class="p-btn" data-act="send" type="button" title="Copy to a topic board" aria-label="Copy to a topic board"><svg class="i s"><use href="#i-send"/></svg></button>
             <button class="p-btn" data-act="del" type="button" title="Delete (Delete)" aria-label="Delete"><svg class="i s"><use href="#i-trash"/></svg></button>
           </div></section>
         </aside>
@@ -764,7 +836,17 @@ body:has(#modal:not([hidden])) #notices,body:has(#gate:not([hidden])) #notices{d
 
 <div id="tocPop" class="pop toc-pop" hidden role="dialog" aria-label="Contents"><div id="tocList"></div></div>
 
+<div id="boardsPop" class="pop boards-pop" hidden role="dialog" aria-label="Boards">
+  <div id="bpRename" class="bp-rename" hidden><input id="bpName" type="text" aria-label="Board name" autocomplete="off" spellcheck="false"></div>
+  <div id="bpTitle" class="bp-title"></div>
+  <div id="bpList"></div>
+  <div class="sep"></div>
+  <button id="bpNew" class="mi" type="button">+ New topic board</button>
+</div>
+
 <div id="boardMenu" class="pop" hidden role="dialog" aria-label="Board options">
+  <button id="bNewTopic" class="mi" type="button">New topic board</button>
+  <div class="sep"></div>
   <button id="bfMenu" class="mi" type="button">Find on this board<kbd>Ctrl F</kbd></button>
   <button id="exportPng" class="mi" type="button">Export as PNG<kbd>Ctrl Shift E</kbd></button>
   <button id="copyPng" class="mi" type="button">Copy as PNG<kbd>Shift Alt C</kbd></button>
@@ -1049,6 +1131,7 @@ async function loadPdf(bytes) {
 
 /* ---------- library ---------- */
 function renderLibrary() {
+  try { renderHlPanel(); } catch (e) {}
   const ul = $('#docList'); ul.textContent = '';
   $('#libCount').textContent = S.docs.length || '';
   if (!S.docs.length) {
@@ -1167,7 +1250,7 @@ function closeDoc() {
   S.pdf = null; S.doc = null; io && io.disconnect(); rendered.clear();
   pagesEl.textContent = ''; $('#readerEmpty').hidden = false;
   $('#docTitle').value = ''; $('#docTitle').readOnly = true; $('#pageTotal').textContent = '/ 0'; $('#pageIn').value = '';
-  $('#pager').hidden = true; $('#zoomSeg').hidden = true; $('#findBtn').hidden = true; $('#tocBtn').hidden = true; $('#eraseBtn').hidden = true; if (ERASE.on) setEraser(false);
+  $('#pager').hidden = true; $('#zoomSeg').hidden = true; $('#findBtn').hidden = true; $('#tocBtn').hidden = true; $('#eraseBtn').hidden = true; if (ERASE.on) setEraser(false); $('#clipBtn').hidden = true; if (CLIP.on) setClip(false); $('#hlListBtn').hidden = true; setHlPanel(false);
   closeFind(); FIND.texts = new Map();
   LS.set('doc', null);
 }
@@ -1184,7 +1267,7 @@ async function openDoc(id, page) {
   catch (e) { toast(e && e.message === 'reader-unavailable' ? 'The PDF engine could not load. Check your connection and reload.' : 'Couldn\'t open this PDF.'); return; }
   if (prevPdf) { try { prevPdf.destroy(); } catch (e) {} }
   S.pdf = pdf; S.doc = id; S.sizes = {};
-  $('#pager').hidden = false; $('#zoomSeg').hidden = false; $('#findBtn').hidden = false; $('#eraseBtn').hidden = false;
+  $('#pager').hidden = false; $('#zoomSeg').hidden = false; $('#findBtn').hidden = false; $('#eraseBtn').hidden = false; $('#clipBtn').hidden = false; $('#hlListBtn').hidden = false;
   const d = S.docs.find(d => d.id === id);
   S.zoom = (d && d.zoom) || 1;
   FIND.texts = new Map(); if (!$('#findBar').hidden) closeFind();
@@ -1196,7 +1279,7 @@ async function openDoc(id, page) {
   $('#pageTotal').textContent = '/ ' + pdf.numPages;
   if (d) { d.opened = Date.now(); DB.put('docs', d); }
   LS.set('doc', id);
-  showBoard(boardForDoc(id).id);
+  { const cur = board(); if (!(cur && cur.topic)) showBoard(boardForDoc(id).id); else boardForDoc(id); }
   $('#backName').textContent = d ? d.name : 'PDF'; $('#backToPdf').hidden = S.layout !== 'board';
   renderLibrary();
   computeScale(); buildShells();
@@ -1361,6 +1444,7 @@ async function loadOutline(pdf) {
   if (pdf !== S.pdf) return;
   S.outline = flat.filter(x => x.page);
   $('#tocBtn').hidden = !S.outline.length;
+  renderHlPanel();
 }
 function openToc() {
   const pop = $('#tocPop');
@@ -1503,20 +1587,27 @@ document.addEventListener('keydown', e => {
   if (S.pdf) { e.preventDefault(); if (NARROW()) setView('read'); openFind(); }
 }, true);
 
-/* ---------- highlights in the reader ---------- */
+/* ---------- highlights in the reader ----------
+   A highlight's rects are fractions of its page. One that runs onto the next page carries that page's
+   number as a fifth value on those rects. A clipped area is a highlight with one rect and an image. */
+function rectsOn(h, n) { return h.rects.filter(r => (r[4] || h.page) === n); }
+function onPage(h, n) { return h.page === n || h.rects.some(r => r[4] === n); }
+function isImgCard(c) { if (c.img) return true; const h = c.hl && hlById(c.hl); return !!(h && h.area); }
 function drawHL(pEl, n) {
   const layer = pEl.querySelector('.hl'); if (!layer) return;
   layer.textContent = '';
   for (const h of S.hls) {
-    if (h.docId !== S.doc || h.page !== n) continue;
-    for (const r of h.rects) {
-      const m = el('div', 'mark-r'); m.dataset.c = h.color; m.dataset.id = h.id;
+    if (h.docId !== S.doc || !onPage(h, n)) continue;
+    for (const r of rectsOn(h, n)) {
+      const m = el('div', 'mark-r' + (h.area ? ' mark-area' : '')); m.dataset.c = h.color; m.dataset.id = h.id;
       m.style.left = r[0] * 100 + '%'; m.style.top = r[1] * 100 + '%'; m.style.width = r[2] * 100 + '%'; m.style.height = r[3] * 100 + '%';
       layer.appendChild(m);
     }
   }
 }
 function redrawPage(n) { const p = pageEl(n); if (p) drawHL(p, n); }
+function pagesOf(h) { return [...new Set([h.page, ...h.rects.map(r => r[4]).filter(Boolean)])]; }
+function redrawHl(h) { if (h.docId === S.doc) pagesOf(h).forEach(redrawPage); }
 
 let selTimer = 0;
 document.addEventListener('selectionchange', () => { clearTimeout(selTimer); selTimer = setTimeout(checkSel, 200); });
@@ -1557,41 +1648,65 @@ function mergeRects(rs) {
 function createHighlight(color) {
   const r = S.pendingRange; $('#selPop').hidden = true;
   if (!r || !S.pdf) return;
-  const sc = r.startContainer; const startEl = sc.nodeType === 1 ? sc : sc.parentElement;
-  const pEl = startEl && startEl.closest('.page');
-  if (!pEl) return;
-  const pr = pEl.getBoundingClientRect();
-  const raw = [...r.getClientRects()].filter(q => q.width > 0.5 && q.height > 2 &&
-    q.left + q.width / 2 >= pr.left && q.left + q.width / 2 <= pr.right && q.top + q.height / 2 >= pr.top && q.top + q.height / 2 <= pr.bottom);
+  const pageOf = node => { const e = node && (node.nodeType === 1 ? node : node.parentElement); return e && e.closest('.page'); };
+  const p0 = pageOf(r.startContainer), p1 = pageOf(r.endContainer) || p0;
+  if (!p0) return;
+  const n0 = +p0.dataset.n, n1 = Math.max(n0, +p1.dataset.n);
+  const all = [...r.getClientRects()].filter(q => q.width > 0.5 && q.height > 2);
+  const rects = [];
+  // a selection can run on into the next page: each page keeps its own part
+  for (let n = n0; n <= n1; n++) {
+    const pEl = pageEl(n); if (!pEl) continue;
+    const pr = pEl.getBoundingClientRect();
+    const raw = all.filter(q => q.height < pr.height * 0.15 &&
+      q.left + q.width / 2 >= pr.left && q.left + q.width / 2 <= pr.right && q.top + q.height / 2 >= pr.top && q.top + q.height / 2 <= pr.bottom);
+    for (const q of mergeRects(raw)) {
+      const v = [q.left - pr.left, q.top - pr.top, q.right - q.left, q.bottom - q.top].map((v, i) => +(v / (i % 2 ? pr.height : pr.width)).toFixed(5));
+      if (n !== n0) v.push(n);
+      rects.push(v);
+    }
+  }
   const text = r.toString().replace(/\s+/g, ' ').trim();
-  if (!raw.length || !text) return;
-  const rects = mergeRects(raw).map(q => [q.left - pr.left, q.top - pr.top, q.right - q.left, q.bottom - q.top]
-    .map((v, i) => +(v / (i % 2 ? pr.height : pr.width)).toFixed(5)));
-  const n = +pEl.dataset.n;
-  const h = { id: uid(), docId: S.doc, docName: (S.docs.find(d => d.id === S.doc) || {}).name || '', page: n, rects, text, color, note: '', created: Date.now() };
+  if (!rects.length || !text) return;
+  const first = rects.find(q => !q[4]) ? n0 : rects[0][4];
+  const fixed = first === n0 ? rects : rects.map(q => (q[4] === first ? q.slice(0, 4) : q));
+  const h = { id: uid(), docId: S.doc, docName: (S.docs.find(d => d.id === S.doc) || {}).name || '', page: first, rects: fixed, text, color, note: '', created: Date.now() };
   S.hls.push(h); DB.put('hls', h);
   getSelection().removeAllRanges(); S.pendingRange = null;
-  drawHL(pEl, n); renderLibrary();
-  const hb = boardForDoc(S.doc);
+  for (let n = n0; n <= n1; n++) redrawPage(n);
+  renderLibrary();
+  placeNewHighlight(h);
+}
+/* A new highlight lands on its PDF's board, and on the topic board too when one is open. */
+function placeNewHighlight(h) {
+  const cur = board();
+  const hb = boardForDoc(h.docId);
+  if (cur && cur.topic) {
+    autoPlace(h, hb); saveBoard(hb);
+    const card = autoPlace(h, cur); saveBoard(cur); renderBoard();
+    if (!boardEl.offsetParent) { S.pendingReveal = card.id; if (S.layout === 'pdf') toast(`Added to "${cur.name}".`, 1300); }
+    requestAnimationFrame(() => { revealCard(card.id); flash(world.querySelector(`.card[data-id="${card.id}"]`)); });
+    return;
+  }
   if (S.boardId !== hb.id) showBoard(hb.id);
   const card = autoPlace(h, hb); saveBoard(hb); renderBoard();
   if (!boardEl.offsetParent) { S.pendingReveal = card.id; if (S.layout === 'pdf') toast('Added to the board.', 1300); }
   requestAnimationFrame(() => { revealCard(card.id); flash(world.querySelector(`.card[data-id="${card.id}"]`)); });
 }
 scroller.addEventListener('click', e => {
-  if (ERASE.on) return;
+  if (ERASE.on || CLIP.on) return;
   const sel = getSelection(); if (sel && !sel.isCollapsed) return;
   const pEl = e.target.closest('.page'); if (!pEl) { hidePop($('#hlPop')); return; }
   const pr = pEl.getBoundingClientRect();
   const x = (e.clientX - pr.left) / pr.width, y = (e.clientY - pr.top) / pr.height;
   const n = +pEl.dataset.n;
-  const h = S.hls.find(h => h.docId === S.doc && h.page === n && h.rects.some(r => x >= r[0] && x <= r[0] + r[2] && y >= r[1] - 0.002 && y <= r[1] + r[3] + 0.002));
+  const h = S.hls.find(h => h.docId === S.doc && onPage(h, n) && rectsOn(h, n).some(r => x >= r[0] && x <= r[0] + r[2] && y >= r[1] - 0.002 && y <= r[1] + r[3] + 0.002));
   if (!h) { hidePop($('#hlPop')); return; }
   openHlPop(h, e.clientX, e.clientY);
 });
 function openHlPop(h, x, y) {
   S.hlOpen = h.id;
-  $('#hlQuote').textContent = h.text;
+  $('#hlQuote').textContent = h.area ? (h.text ? 'Clipped area: ' + h.text : 'Clipped area') : h.text;
   $$('#hlColors .sw').forEach(b => b.classList.toggle('on', b.dataset.c === h.color));
   $('#hlNote').value = h.note || '';
   const del = $('#hlDel'); del.classList.remove('confirm'); del.textContent = 'Delete';
@@ -1601,11 +1716,11 @@ $('#hlColors').addEventListener('click', e => {
   const b = e.target.closest('.sw'); const h = hlById(S.hlOpen); if (!b || !h) return;
   h.color = b.dataset.c; DB.put('hls', h);
   $$('#hlColors .sw').forEach(x => x.classList.toggle('on', x === b));
-  redrawPage(h.page); refreshCardsFor(h.id); renderTray();
+  redrawHl(h); refreshCardsFor(h.id); renderTray();
 });
 $('#hlNote').addEventListener('input', e => {
   const h = hlById(S.hlOpen); if (!h) return;
-  h.note = e.target.value; later('note', () => { DB.put('hls', h); refreshCardsFor(h.id); }, 400);
+  h.note = e.target.value; later('note', () => { DB.put('hls', h); refreshCardsFor(h.id); renderHlPanel(); }, 400);
 });
 $('#hlDel').addEventListener('click', e => {
   twoStep(e.currentTarget, 'Delete highlight and its cards', () => {
@@ -1616,7 +1731,7 @@ $('#hlDel').addEventListener('click', e => {
 $('#hlShow').addEventListener('click', () => { const h = hlById(S.hlOpen); hidePop($('#hlPop')); if (h) showOnBoard(h.id); });
 function deleteHighlight(h) {
   const u = removeHighlight(h);
-  if (h.docId === S.doc) redrawPage(h.page);
+  redrawHl(h);
   renderBoard(); renderLibrary();
   ERASE.last = { removed: [u], t: Date.now() };
   toastAction('Highlight deleted.', 'Undo', undoErase);
@@ -1629,11 +1744,12 @@ function hlAt(pEl, clientX, clientY) {
   const pr = pEl.getBoundingClientRect();
   const x = (clientX - pr.left) / pr.width, y = (clientY - pr.top) / pr.height, n = +pEl.dataset.n;
   const pad = 0.004;
-  return S.hls.find(h => h.docId === S.doc && h.page === n &&
-    h.rects.some(r => x >= r[0] - pad && x <= r[0] + r[2] + pad && y >= r[1] - pad && y <= r[1] + r[3] + pad));
+  return S.hls.find(h => h.docId === S.doc && onPage(h, n) &&
+    rectsOn(h, n).some(r => x >= r[0] - pad && x <= r[0] + r[2] + pad && y >= r[1] - pad && y <= r[1] + r[3] + pad));
 }
 function setEraser(on) {
   if (on && !S.pdf) return;
+  if (on && CLIP.on) setClip(false);
   ERASE.on = on;
   scroller.classList.toggle('erasing', on);
   $('#eraseBtn').setAttribute('aria-pressed', String(on));
@@ -1669,7 +1785,7 @@ function restoreHighlights(list) {
       for (const l of ub.links) if (!b.links.some(x => x.id === l.id)) b.links.push(l);
       DB.put('boards', b);
     }
-    if (u.h.docId === S.doc) pages.add(u.h.page);
+    if (u.h.docId === S.doc) pagesOf(u.h).forEach(n => pages.add(n));
   }
   pages.forEach(redrawPage);
   renderBoard(); renderLibrary();
@@ -1701,7 +1817,7 @@ function eraseAt(e) {
   const h = hlAt(pEl, e.clientX, e.clientY); if (!h) return;
   if (!ERASE.stroke.snapped) { ERASE.stroke.snapped = true; takeSnapshot('Before erasing highlights', { minGap: 60e3 }); }
   ERASE.stroke.removed.push(removeHighlight(h));
-  redrawPage(h.page);
+  redrawHl(h);
 }
 pagesEl.addEventListener('pointerdown', e => {
   if (!ERASE.on || e.button !== 0) return;
@@ -1744,9 +1860,171 @@ document.addEventListener('keydown', e => {
   if (e.code === 'KeyE' && !e.shiftKey && S.pdf && !S.overBoard && !$('#app').classList.contains('focus')) { e.preventDefault(); setEraser(!ERASE.on); }
 }, true);
 
+/* ---------- clip: drag a box on a page to put that part of it on the board ----------
+   For figures, tables, formulas, and scanned pages that have no text to select. The area is drawn
+   again from the PDF at high resolution, so the picture stays sharp whatever the zoom. */
+const CLIP = { on: false, drag: null };
+function setClip(on) {
+  if (on && !S.pdf) return;
+  if (on && ERASE.on) setEraser(false);
+  CLIP.on = on;
+  scroller.classList.toggle('clipping', on);
+  $('#clipBtn').setAttribute('aria-pressed', String(on));
+  if (on) { $('#selPop').hidden = true; hidePop($('#hlPop')); try { getSelection().removeAllRanges(); } catch (e) {} }
+}
+function canvasToBlob(cv, type, q) { return new Promise(r => cv.toBlob(r, type, q)); }
+async function clipTextIn(page, vp1, fr) {
+  try {
+    const tc = await page.getTextContent();
+    const x0 = fr[0] * vp1.width, y0 = fr[1] * vp1.height, x1 = x0 + fr[2] * vp1.width, y1 = y0 + fr[3] * vp1.height;
+    const out = [];
+    for (const it of tc.items) {
+      if (!('str' in it) || !it.str.trim()) continue;
+      const [x, y] = vp1.convertToViewportPoint(it.transform[4], it.transform[5]);
+      const hgt = Math.hypot(it.transform[2], it.transform[3]) || 8;
+      if (x >= x0 - 2 && x <= x1 && y - hgt * 0.5 >= y0 - 2 && y <= y1 + 2) out.push(it.str + (it.hasEOL ? '\n' : ' '));
+    }
+    return out.join('').replace(/[ \t]+/g, ' ').replace(/\s*\n\s*/g, '\n').trim().slice(0, 4000);
+  } catch (e) { return ''; }
+}
+async function makeClip(n, fr) {
+  const pdf = S.pdf, docId = S.doc; if (!pdf) return;
+  let blob, w, h, text;
+  try {
+    const page = await pdf.getPage(n);
+    const vp1 = page.getViewport({ scale: 1 });
+    const bw = fr[2] * vp1.width, bh = fr[3] * vp1.height;
+    const k = clamp(1800 / Math.max(bw, bh), 1.5, 4);
+    const cv = document.createElement('canvas');
+    cv.width = Math.max(1, Math.round(bw * k)); cv.height = Math.max(1, Math.round(bh * k));
+    const ctx = cv.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+    const vp = page.getViewport({ scale: k, offsetX: -fr[0] * vp1.width * k, offsetY: -fr[1] * vp1.height * k });
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    blob = await canvasToBlob(cv, 'image/png');
+    if (!blob || blob.size > 1.6e6) blob = (await canvasToBlob(cv, 'image/webp', 0.92)) || blob;
+    w = cv.width; h = cv.height;
+    text = await clipTextIn(page, vp1, fr);
+  } catch (e) { console.warn('clip', e); toast('That area could not be clipped. Try again.'); return; }
+  if (!blob) { toast('That area could not be clipped.'); return; }
+  const img = uid();
+  if ((await DB.put('images', { k: img, blob, w, h })) == null && S.dbOk) { toast('There is no room left to store this clip.'); return; }
+  imgURLs.set(img, URL.createObjectURL(blob));
+  const hl = { id: uid(), docId, docName: (S.docs.find(d => d.id === docId) || {}).name || '', page: n, rects: [fr.map(v => +v.toFixed(5))],
+    text, area: true, img, ar: +(h / w).toFixed(4), color: 'b', note: '', created: Date.now() };
+  S.hls.push(hl); DB.put('hls', hl);
+  redrawPage(n); renderLibrary();
+  placeNewHighlight(hl);
+}
+pagesEl.addEventListener('pointerdown', e => {
+  if (!CLIP.on || e.button !== 0) return;
+  const pEl = e.target.closest('.page'); if (!pEl) return;
+  e.preventDefault();
+  const box = el('div', 'clip-box'); pEl.appendChild(box);
+  CLIP.drag = { pEl, box, id: e.pointerId, x0: e.clientX, y0: e.clientY };
+  try { pagesEl.setPointerCapture(e.pointerId); } catch (err) {}
+});
+function clipFrac(d, cx, cy) {
+  const pr = d.pEl.getBoundingClientRect();
+  const fx = v => clamp((v - pr.left) / pr.width, 0, 1), fy = v => clamp((v - pr.top) / pr.height, 0, 1);
+  const x0 = Math.min(fx(d.x0), fx(cx)), x1 = Math.max(fx(d.x0), fx(cx)), y0 = Math.min(fy(d.y0), fy(cy)), y1 = Math.max(fy(d.y0), fy(cy));
+  return { fr: [x0, y0, x1 - x0, y1 - y0], px: [(x1 - x0) * pr.width, (y1 - y0) * pr.height] };
+}
+pagesEl.addEventListener('pointermove', e => {
+  const d = CLIP.drag; if (!d || d.id !== e.pointerId) return;
+  const { fr } = clipFrac(d, e.clientX, e.clientY);
+  Object.assign(d.box.style, { left: fr[0] * 100 + '%', top: fr[1] * 100 + '%', width: fr[2] * 100 + '%', height: fr[3] * 100 + '%' });
+});
+['pointerup', 'pointercancel'].forEach(t => pagesEl.addEventListener(t, e => {
+  const d = CLIP.drag; if (!d || d.id !== e.pointerId) return;
+  CLIP.drag = null; d.box.remove();
+  if (t === 'pointercancel') return;
+  const { fr, px } = clipFrac(d, e.clientX, e.clientY);
+  if (px[0] < 12 || px[1] < 12) { toast('Drag a box around what you want to clip.', 1800); return; }
+  makeClip(+d.pEl.dataset.n, fr);
+}));
+$('#clipBtn').onclick = () => setClip(!CLIP.on);
+document.addEventListener('keydown', e => {
+  const typing = e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"]');
+  if (typing || !$('#modal').hidden || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === 'Escape' && CLIP.on) { setClip(false); return; }
+  if (e.code === 'KeyC' && !e.shiftKey && S.pdf && !S.overBoard && !$('#app').classList.contains('focus') && $('#selPop').hidden) { e.preventDefault(); setClip(!CLIP.on); }
+}, true);
+
+/* ---------- highlights panel: every highlight in this PDF, in page order ---------- */
+const HP = { open: false, f: 'all' };
+function setHlPanel(on) {
+  if (on && !S.pdf) return;
+  HP.open = on; $('#hlPanel').hidden = !on; $('#hlListBtn').setAttribute('aria-pressed', String(on));
+  if (on) { renderHlPanel(true); }
+}
+function hpKey(h) { const r = rectsOn(h, h.page)[0] || [0, 0]; return h.page * 10 + r[1] * 9.99; }
+function renderHlPanel(scrollToHere) {
+  if (!HP.open) return;
+  const ul = $('#hpList'); ul.textContent = '';
+  const mine = S.hls.filter(h => h.docId === S.doc).sort((a, b) => hpKey(a) - hpKey(b));
+  const q = $('#hpSearch').value.trim().toLowerCase();
+  const list = mine.filter(h =>
+    (HP.f === 'all' || (HP.f === 'note' ? (h.note || '').trim() : HP.f === 'clip' ? h.area : h.color === HP.f)) &&
+    (!q || (h.text + ' ' + (h.note || '')).toLowerCase().includes(q)));
+  $('#hpCount').textContent = mine.length ? (list.length === mine.length ? String(mine.length) : `${list.length} of ${mine.length}`) : '';
+  if (!list.length) {
+    ul.appendChild(el('li', 'hp-empty', mine.length ? 'Nothing matches.' : 'No highlights yet. Select text and press 1–4, or press C to clip an area.'));
+    return;
+  }
+  const chapters = (S.outline || []).filter(o => o.depth <= 1);
+  const chapterOf = h => { let c = null; for (const o of chapters) if (o.page <= h.page) c = o; else break; return c; };
+  const mark = (node, text) => {
+    if (!q) { node.textContent = text; return; }
+    const i = text.toLowerCase().indexOf(q);
+    if (i < 0) { node.textContent = text; return; }
+    node.append(text.slice(0, i), el('mark', null, text.slice(i, i + q.length)), text.slice(i + q.length));
+  };
+  const cur = currentPage(); let lastChap, here = null;
+  for (const h of list) {
+    const ch = chapterOf(h);
+    if (ch && ch !== lastChap) { ul.appendChild(el('li', 'hp-chap', ch.title)); lastChap = ch; }
+    const li = el('li', 'hp-item'); li.dataset.id = h.id;
+    const sw = el('span', 'hp-sw'); sw.dataset.c = h.color; li.appendChild(sw);
+    const body = el('div', 'hp-body');
+    if (h.area) {
+      const im = el('img', 'hp-thumb'); im.alt = 'Clipped area'; im.loading = 'lazy';
+      imageURL(h.img).then(u => { if (u) im.src = u; });
+      body.appendChild(im);
+      if (h.text) { const t = el('div', 'hp-text'); mark(t, h.text); body.appendChild(t); }
+    } else { const t = el('div', 'hp-text'); mark(t, h.text); body.appendChild(t); }
+    if ((h.note || '').trim()) { const n = el('div', 'hp-note'); mark(n, h.note.trim()); body.appendChild(n); }
+    li.append(body, el('span', 'hp-pg', 'p. ' + h.page));
+    if (h.page <= cur) here = li;
+    ul.appendChild(li);
+  }
+  if (here) here.classList.add('here');
+  if (scrollToHere && here) here.scrollIntoView({ block: 'center' });
+}
+$('#hlListBtn').onclick = () => setHlPanel(!HP.open);
+$('#hpClose').onclick = () => setHlPanel(false);
+$('#hpSearch').addEventListener('input', () => later('hpsearch', () => renderHlPanel(), 120));
+$('#hpSearch').addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (e.target.value) { e.target.value = ''; renderHlPanel(); } else setHlPanel(false); } });
+$('#hpFilters').addEventListener('click', e => {
+  const b = e.target.closest('button[data-f]'); if (!b) return;
+  HP.f = HP.f === b.dataset.f ? 'all' : b.dataset.f;
+  $$('#hpFilters button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.f === HP.f)));
+  renderHlPanel();
+});
+$('#hpList').addEventListener('click', e => {
+  const li = e.target.closest('.hp-item'); if (!li) return;
+  const h = hlById(li.dataset.id); if (!h) return;
+  $$('#hpList .hp-item.on').forEach(x => x.classList.remove('on'));
+  goToSource(h);
+});
+document.addEventListener('keydown', e => {
+  const typing = e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"]');
+  if (typing || !$('#modal').hidden || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.code === 'KeyL' && S.pdf && !S.overBoard && !$('#app').classList.contains('focus')) { e.preventDefault(); setHlPanel(!HP.open); }
+}, true);
+
 async function goToSource(h) {
   if (!S.haveFile.has(h.docId) && !memFiles.has(h.docId)) { toast(`Add "${docName(h)}" again to see where this came from.`); return; }
-  const top = Math.min(...h.rects.map(r => r[1]));
+  const top = Math.min(...rectsOn(h, h.page).map(r => r[1]));
   if (S.layout === 'board') setLayout('split');
   await openDoc(h.docId);
   if (NARROW()) setView('read');
@@ -1782,7 +2060,9 @@ function seedBoard() {
 function saveBoard(b = board()) { if (b) later('board' + b.id, () => { commitHistory(b); DB.put('boards', b); }, 350); }
 /* A PDF's board is named after the PDF, so it follows the name set in the reader. */
 function renderBoardSel() {
-  const b = board(); if (!b || !b.docId) return;
+  const b = board();
+  try { renderBoardSwitch(); } catch (e) {}
+  if (!b || !b.docId) return;
   const d = S.docs.find(x => x.id === b.docId);
   if (d && b.name !== d.name) { b.name = d.name; DB.put('boards', b); }
 }
@@ -1878,6 +2158,7 @@ function cardEl(c) {
   if (c.img) return imageCardEl(c);
   const h = c.hl ? hlById(c.hl) : null;
   if (c.hl && !h) return null;
+  if (h && h.area) return imageCardEl(c, h);
   const e = el('div', 'card' + (S.sel.has(c.id) ? ' sel' : ''));
   e.dataset.id = c.id; e.dataset.color = h ? h.color : (c.color || 'n');
   if (c.ink) e.dataset.ink = c.ink;
@@ -1947,7 +2228,8 @@ function cardSize(id) {
   const e = world.querySelector(`.card[data-id="${id}"]`);
   if (e) return { w: e.offsetWidth, h: e.offsetHeight };
   const b = board(), c = b && b.cards.find(x => x.id === id);
-  return c && c.img ? { w: c.w || 300, h: Math.round((c.w || 300) * (c.ar || 0.75)) } : { w: CARD_W, h: 110 };
+  if (c && isImgCard(c)) { const h = !c.img && hlById(c.hl); return { w: c.w || 300, h: Math.round((c.w || 300) * ((h ? h.ar : c.ar) || 0.75)) }; }
+  return { w: CARD_W, h: 110 };
 }
 function inZone(c, z) { const s = cardSize(c.id); const cx = c.x + s.w / 2, cy = c.y + s.h / 2; return cx >= z.x && cx <= z.x + z.w && cy >= z.y && cy <= z.y + z.h; }
 function updateCounts() {
@@ -2076,7 +2358,7 @@ function placeCardBar() {
   const panel = $('#props');
   const on = boardEl.offsetParent !== null;
   const cards = on ? selectedCards() : [], zones = on ? selectedZones() : [];
-  const text = cards.filter(c => !c.img);
+  const text = cards.filter(c => !isImgCard(c));
   if (!cards.length && !zones.length) { panel.hidden = true; return; }
   panel.hidden = false;
   $('#pColor').hidden = !(text.length || zones.length);
@@ -2107,7 +2389,7 @@ function reorderSelection(where) {
   b.zones = where === 'front' ? zr.concat(zs) : zs.concat(zr);
 }
 function styleSelection(change) {
-  const text = selectedCards().filter(c => !c.img), zones = selectedZones();
+  const text = selectedCards().filter(c => !isImgCard(c)), zones = selectedZones();
   if (!text.length && !zones.length && !change.layer) return;
   if ('ink' in change) { text.forEach(c => { c.ink = change.ink; }); zones.forEach(z => { z.ink = change.ink; }); MM.colors.clear(); }
   if ('size' in change) text.forEach(c => { c.size = change.size === 'm' ? undefined : change.size; });
@@ -2130,6 +2412,7 @@ $('#props').addEventListener('click', e => {
   else if (d.act === 'bold' || d.act === 'italic') styleSelection({ [d.act]: 'toggle' });
   else if (d.act === 'front' || d.act === 'back') styleSelection({ layer: d.act });
   else if (d.act === 'dup') { if (copySelection()) pasteClip(null); }
+  else if (d.act === 'send') openBoardsPop(btn, 'send');
   else if (d.act === 'del') deleteSelection();
 });
 document.addEventListener('keydown', e => {
@@ -2351,7 +2634,7 @@ boardEl.addEventListener('pointermove', e => {
       drawLinks(); break;
     }
     case 'cwidth': {
-      drag.c.w = Math.round(clamp(drag.w0 + dx, drag.c.img ? 40 : 90, drag.c.img ? 2400 : 720));
+      drag.c.w = Math.round(clamp(drag.w0 + dx, isImgCard(drag.c) ? 40 : 90, isImgCard(drag.c) ? 2400 : 720));
       drag.el.style.width = drag.c.w + 'px'; drag.el.style.maxWidth = 'none';
       drawLinks(); placeCardBar(); break;
     }
@@ -2548,6 +2831,11 @@ function boardMarkdown(b) {
   const fmt = c => {
     if (c.img) return ['*[image]*', ''];
     const h = c.hl && hlById(c.hl);
+    if (h && h.area) {
+      const out = [`> *[clipped area]*${h.text ? ' ' + h.text.replace(/\s+/g, ' ') : ''}`, h.docId === b.docId ? `> — p. ${h.page}` : `> — ${docName(h)}, p. ${h.page}`];
+      if (h.note) out.push('', `Note: ${h.note}`);
+      out.push(''); return out;
+    }
     const text = (c.text != null ? c.text : (h ? h.text : '')).trim();
     if (!text) return [];
     if (!h) {
@@ -2648,7 +2936,7 @@ async function boardCanvas({ selectionOnly = true, background = true } = {}) {
   }
   for (const c of cards) {
     const e = world.querySelector(`.card[data-id="${c.id}"]`); if (!e) continue;
-    if (c.img) { const im = e.querySelector('img'); if (im && im.complete && im.naturalWidth) items.push({ kind: 'image', ...toW(im.getBoundingClientRect()), el: im }); continue; }
+    if (isImgCard(c)) { const im = e.querySelector('img'); if (im && im.complete && im.naturalWidth) items.push({ kind: 'image', ...toW(im.getBoundingClientRect()), el: im }); continue; }
     const t = e.querySelector('.card-text'); const cs = getComputedStyle(t);
     const box = toW(t.getBoundingClientRect());
     const card = { kind: 'card', ...box, radius: parseFloat(cs.borderTopLeftRadius) || 9, border: parseFloat(cs.borderTopWidth) || 1.75,
@@ -2773,7 +3061,7 @@ async function imageURL(id) {
   const u = URL.createObjectURL(rec.blob); imgURLs.set(id, u); return u;
 }
 async function imageBlob(id) { const rec = await DB.get('images', id); return (rec && rec.blob) || null; }
-function imageIdsInUse() { return [...new Set(S.boards.flatMap(b => b.cards.filter(c => c.img).map(c => c.img)))]; }
+function imageIdsInUse() { return [...new Set(S.boards.flatMap(b => b.cards.filter(c => c.img).map(c => c.img)).concat(S.hls.filter(h => h.img).map(h => h.img)))]; }
 function loadImg(src) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; }); }
 /* Very large images are scaled down so a library of screenshots doesn't fill the browser's storage. */
 async function prepareImage(file) {
@@ -2833,21 +3121,25 @@ async function addImages(files, at) {
   requestAnimationFrame(() => { setSel(ids); revealCard(ids[ids.length - 1]); });
   return ids.length;
 }
-function imageCardEl(c) {
+function imageCardEl(c, h) {
+  const imgId = h ? h.img : c.img, ar = h ? h.ar : c.ar;
   const e = el('div', 'card img-card' + (S.sel.has(c.id) ? ' sel' : ''));
   e.dataset.id = c.id; e.dataset.color = 'n';
   e.style.left = c.x + 'px'; e.style.top = c.y + 'px';
   e.style.width = (c.w || 300) + 'px'; e.style.maxWidth = 'none';
+  if (h) e.dataset.color = h.color;
   const im = document.createElement('img');
-  im.alt = ''; im.draggable = false; im.decoding = 'async';
-  im.style.aspectRatio = `1 / ${c.ar || 0.75}`;
+  im.alt = h && h.text ? h.text.slice(0, 200) : ''; im.draggable = false; im.decoding = 'async';
+  im.style.aspectRatio = `1 / ${ar || 0.75}`;
   im.addEventListener('load', () => scheduleMinimap());
-  const u = imgURLs.get(c.img);
+  const u = imgURLs.get(imgId);
   if (u) im.src = u;
-  else imageURL(c.img).then(x => { if (x) im.src = x; else e.classList.add('img-missing'); });
+  else imageURL(imgId).then(x => { if (x) im.src = x; else e.classList.add('img-missing'); });
   e.appendChild(im);
+  if (h && h.note) e.appendChild(el('div', 'card-note', h.note));
   const m = el('div', 'card-meta');
-  m.appendChild(el('span', 'lbl', 'Image'));
+  if (h) { const s = el('button', 'src', `${docName(h)} · p. ${h.page}`); s.type = 'button'; s.title = 'Open in the reader'; m.appendChild(s); }
+  else m.appendChild(el('span', 'lbl', 'Image'));
   const hd = el('button', 'handle'); hd.type = 'button'; hd.title = 'Drag onto another card to connect them'; hd.setAttribute('aria-label', 'Connect to another card');
   const rm = el('button', 'crm icon-btn', '×'); rm.type = 'button'; rm.setAttribute('aria-label', 'Delete image'); rm.title = 'Delete image';
   m.append(hd, rm); e.appendChild(m);
@@ -2867,7 +3159,7 @@ function mmLook(c) {
   if (MM.colors.has(c.id)) return MM.colors.get(c.id);
   const e = world.querySelector(`.card[data-id="${c.id}"]`);
   let look = null;
-  if (e && c.img) look = { img: e.querySelector('img') };
+  if (e && isImgCard(c)) look = { img: e.querySelector('img') };
   else if (e) {
     const cs = getComputedStyle(e.querySelector('.card-text'));
     const framed = cs.borderTopColor !== 'rgba(0, 0, 0, 0)';
@@ -3103,7 +3395,7 @@ function autoPlace(h, b = board()) {
   const jitter = n => Math.round((Math.random() - 0.5) * n);
   const vis = visibleWorldRect(b);
   const W = CARD_W, GAP = 30;
-  const H = Math.min(40 + Math.ceil(h.text.length / 28) * 24, vis ? (vis.y1 - vis.y0) : 400);
+  const H = h.area ? Math.round(W * (h.ar || 0.6)) + 30 : Math.min(40 + Math.ceil(h.text.length / 28) * 24, vis ? (vis.y1 - vis.y0) : 400);
   const last = b.cards.find(c => c.id === b.lastAuto);
   let x, y;
   const fits = (px, py) => !vis || (px >= vis.x0 - 1 && px + W <= vis.x1 + 1 && py >= vis.y0 - 1 && py + H <= vis.y1 + 1);
@@ -3128,6 +3420,7 @@ function autoPlace(h, b = board()) {
   }
   if (last && Math.abs(y - last.y) > 4 && x < last.x) b.rowX = x;
   const card = { id: uid(), hl: h.id, x: Math.round(x + jitter(10)), y: Math.round(y + jitter(8)) };
+  if (h.area) card.w = W;
   b.cards.push(card); b.lastAuto = card.id;
   h.placedOnce = true; DB.put('hls', h);
   return card;
@@ -3160,7 +3453,7 @@ function showBoard(id) {
 }
 /* Boards from before: move each highlight card to its own PDF's board, with links between them. */
 function splitBoardsByDoc() {
-  for (const old of S.boards.filter(b => !b.docId)) {
+  for (const old of S.boards.filter(b => !b.docId && !b.topic)) {
     const moved = new Map();
     for (const c of old.cards) {
       const h = c.hl && hlById(c.hl); if (!h) continue;
@@ -3339,7 +3632,7 @@ function notesFor(b) {
   const hs = S.hls.filter(h => h.docId === b.docId).sort((a, c) => a.page - c.page || (a.rects[0] || [0, 0])[1] - (c.rects[0] || [0, 0])[1]);
   if (hs.length) {
     md += `\n\n---\n\n## All highlights in this PDF, in page order\n\n`;
-    md += hs.map(h => `- p. ${h.page}: ${h.text.replace(/\s+/g, ' ').trim()}${h.note ? `\n  - Note: ${h.note.replace(/\s+/g, ' ').trim()}` : ''}`).join('\n');
+    md += hs.map(h => `- p. ${h.page}: ${h.area ? '[clipped area] ' : ''}${h.text.replace(/\s+/g, ' ').trim()}${h.note ? `\n  - Note: ${h.note.replace(/\s+/g, ' ').trim()}` : ''}`).join('\n');
   }
   return md + '\n';
 }
@@ -3504,7 +3797,7 @@ async function restoreData(data, getPdf, { quiet = false, getImage = null } = {}
       await DB.put('boards', b);
     }
     if (getImage) {
-      const want = new Set((data.boards || []).flatMap(b => (b.cards || []).filter(c => c.img).map(c => c.img)));
+      const want = new Set((data.boards || []).flatMap(b => (b.cards || []).filter(c => c.img).map(c => c.img)).concat((data.highlights || []).filter(h => h.img).map(h => h.img)));
       for (const id of want) {
         if (await DB.get('images', id)) continue;
         const f = await getImage(id);
@@ -3987,6 +4280,99 @@ addEventListener('error', e => {
   if (!e.filename || !e.filename.startsWith(location.origin) || /ResizeObserver/.test(e.message || '')) return;
   onAppError();
 });
+
+/* ---------- topic boards: gather cards from several PDFs in one place ----------
+   Every PDF keeps its own board. A topic board isn't tied to a PDF: copy cards onto it from any board,
+   and while it's open, new highlights land on it as well as on their PDF's board. Cards keep their
+   source, so a click still opens the page they came from. */
+function topicBoards() { return S.boards.filter(b => b.topic).sort((a, b) => (a.created || 0) - (b.created || 0)); }
+function renderBoardSwitch() {
+  const b = board(), btn = $('#boardSwitch'); if (!btn) return;
+  const show = !!(b && (b.topic || topicBoards().length));
+  btn.hidden = !show;
+  if (show) $('#boardSwitchName').textContent = b.topic ? b.name : (b.name || 'This PDF');
+}
+function newTopicBoard({ open = true } = {}) {
+  const n = topicBoards().length + 1;
+  const b = { id: uid(), topic: true, name: `Topic ${n}`, created: Date.now(), view: { x: 60, y: 90, z: 1 }, zones: [], cards: [], links: [] };
+  S.boards.push(b); DB.put('boards', b);
+  if (open) { showBoard(b.id); if (S.layout === 'pdf') setLayout('split'); }
+  return b;
+}
+function openBoardsPop(anchor, mode = 'switch') {
+  const pop = $('#boardsPop');
+  if (!pop.hidden && pop.dataset.mode === mode) { pop.hidden = true; return; }
+  pop.dataset.mode = mode;
+  const cur = board(), list = $('#bpList'); list.textContent = '';
+  const send = mode === 'send';
+  $('#bpRename').hidden = send || !cur.topic;
+  if (!send && cur.topic) $('#bpName').value = cur.name;
+  $('#bpTitle').textContent = send ? `Copy ${S.sel.size === 1 ? 'this' : 'these ' + S.sel.size} to` : '';
+  const item = (b, label) => {
+    const it = el('button', 'mi bp-item' + (!send && b.id === cur.id ? ' on' : '')); it.type = 'button'; it.dataset.id = b.id;
+    it.append(el('span', null, label || b.name), el('span', 'bp-n', String(b.cards.length)));
+    if (send && b.id === cur.id) it.disabled = true;
+    list.appendChild(it);
+  };
+  if (!send) {
+    const d = S.doc && S.docs.find(x => x.id === S.doc);
+    if (d) { list.appendChild(el('div', 'bp-head', 'This PDF')); item(boardForDoc(d.id), d.name); }
+  }
+  const topics = topicBoards();
+  if (topics.length) { list.appendChild(el('div', 'bp-head', 'Topic boards')); topics.forEach(b => item(b)); }
+  $('#bpNew').textContent = send ? '+ New topic board' : '+ New topic board';
+  const r = anchor.getBoundingClientRect();
+  pop.hidden = false;
+  const pr = pop.getBoundingClientRect();
+  pop.style.left = clamp(r.left, 8, innerWidth - pr.width - 8) + 'px';
+  pop.style.top = clamp(r.bottom + 6, 8, innerHeight - pr.height - 8) + 'px';
+  if (send) { const p2 = $('#props').getBoundingClientRect(); pop.style.left = clamp(p2.right + 8, 8, innerWidth - pr.width - 8) + 'px'; pop.style.top = clamp(r.top - 20, 8, innerHeight - pr.height - 8) + 'px'; }
+}
+function copyToBoard(target) {
+  const src = board(); if (!target || target === src) return;
+  const cards = src.cards.filter(c => S.sel.has(c.id)), zones = src.zones.filter(z => S.sel.has(z.id));
+  if (!cards.length && !zones.length) return;
+  const boxes = cards.map(c => { const s = cardSize(c.id); return [c.x, c.y, c.x + s.w, c.y + s.h]; }).concat(zones.map(z => [z.x, z.y, z.x + z.w, z.y + z.h]));
+  const sx = Math.min(...boxes.map(b => b[0])), sy = Math.min(...boxes.map(b => b[1]));
+  // to the right of what's already on the target board
+  const tItems = target.zones.map(z => [z.x + z.w, z.y]).concat(target.cards.map(c => [c.x + (c.w || CARD_W), c.y]));
+  const tx = tItems.length ? Math.max(...tItems.map(i => i[0])) + 80 : 60;
+  const ty = tItems.length ? Math.min(...tItems.map(i => i[1])) : 90;
+  const map = new Map();
+  const copy = o => { const n = JSON.parse(JSON.stringify(o)); n.id = uid(); map.set(o.id, n.id); n.x = Math.round(o.x - sx + tx); n.y = Math.round(o.y - sy + ty); return n; };
+  const nz = zones.map(copy), nc = cards.map(copy);
+  target.zones.push(...nz); target.cards.push(...nc);
+  for (const l of src.links) if (map.has(l.a) && map.has(l.b)) target.links.push({ ...l, id: uid(), a: map.get(l.a), b: map.get(l.b) });
+  if (nc.length) target.lastAuto = nc[nc.length - 1].id;
+  DB.put('boards', target);
+  const n = nc.length + nz.length;
+  toastAction(`Copied ${n === 1 ? '1 item' : n + ' items'} to "${target.name}".`, 'Open', () => { showBoard(target.id); requestAnimationFrame(() => { setSel([...map.values()]); fitBoard(); }); });
+}
+$('#boardSwitch').onclick = e => openBoardsPop(e.currentTarget, 'switch');
+$('#bpList').addEventListener('click', e => {
+  const it = e.target.closest('.bp-item'); if (!it || it.disabled) return;
+  const pop = $('#boardsPop'), b = S.boards.find(x => x.id === it.dataset.id); pop.hidden = true;
+  if (!b) return;
+  if (pop.dataset.mode === 'send') copyToBoard(b); else showBoard(b.id);
+});
+$('#bpNew').onclick = () => {
+  const pop = $('#boardsPop'), send = pop.dataset.mode === 'send';
+  pop.hidden = true;
+  if (send) { const b = newTopicBoard({ open: false }); copyToBoard(b); renderBoardSwitch(); return; }
+  newTopicBoard();
+  requestAnimationFrame(() => { openBoardsPop($('#boardSwitch'), 'switch'); $('#bpName').focus(); $('#bpName').select(); });
+};
+$('#bNewTopic').onclick = () => {
+  $('#boardMenu').hidden = true; newTopicBoard();
+  requestAnimationFrame(() => { openBoardsPop($('#boardSwitch'), 'switch'); $('#bpName').focus(); $('#bpName').select(); });
+};
+const renameTopic = () => {
+  const b = board(), v = $('#bpName').value.trim(); if (!b || !b.topic || !v || v === b.name) return;
+  b.name = v; DB.put('boards', b); renderBoardSwitch();
+};
+$('#bpName').addEventListener('input', () => later('topicname', renameTopic, 300));
+$('#bpName').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); renameTopic(); $('#boardsPop').hidden = true; } });
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#boardsPop,#boardSwitch,#props [data-act="send"]')) { if (!$('#boardsPop').hidden) { renameTopic(); $('#boardsPop').hidden = true; } } });
 
 /* ---------- start ---------- */
 async function init() {
