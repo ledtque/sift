@@ -357,7 +357,7 @@ svg.i.s{width:16px;height:16px}
 /* ---------- brand ---------- */
 .brand{flex:none;border-radius:6px;display:block}
 .em-logo{display:block;margin:0 auto 18px;border-radius:18px}
-.lib-title{display:flex;align-items:center;gap:9px}
+.lib-title{display:flex;align-items:center;gap:9px;font-family:var(--f-hand);font-size:20px;font-weight:400;color:var(--fg)}
 .lib-title img{border-radius:5px;display:block}
 
 /* ---------- board header + focus mode ---------- */
@@ -526,7 +526,7 @@ svg.i.s{width:16px;height:16px}
   <aside id="lib" aria-label="Library">
     <div class="lib-head">
       <button id="libClose" class="icon-btn" type="button" aria-label="Hide library" title="Hide library"><svg class="i s"><use href="#i-sidebar"/></svg></button>
-      <span class="lib-title">Library</span>
+      <span class="lib-title"><img src="favicon.svg" alt="" width="22" height="22">Sift</span>
       <span class="spacer"></span>
       <label class="icon-btn" for="fileIn" tabindex="0" title="Add PDFs" aria-label="Add PDFs"><svg class="i s"><use href="#i-plus"/></svg></label>
     </div>
@@ -540,8 +540,7 @@ svg.i.s{width:16px;height:16px}
     <section id="reader" aria-label="Reader">
       <div class="vhead">
         <button id="libToggle" class="icon-btn" type="button" aria-label="Show library" title="Library"><svg class="i s"><use href="#i-sidebar"/></svg></button>
-        <img class="brand" src="favicon.svg" alt="" width="22" height="22">
-        <input id="docTitle" class="title" type="text" value="Sift" readonly aria-label="PDF name" spellcheck="false" autocomplete="off">
+        <input id="docTitle" class="title" type="text" value="" readonly aria-label="PDF name" spellcheck="false" autocomplete="off">
         <button id="bkChip" class="bk-chip" type="button" data-tone="off"><span class="dot" aria-hidden="true"></span><span id="bkChipText">Turn on backup</span></button>
         <button id="tocBtn" class="icon-btn" type="button" hidden title="Contents" aria-label="Contents"><svg class="i s"><use href="#i-list"/></svg></button>
         <button id="findBtn" class="icon-btn" type="button" hidden title="Find in this PDF (Ctrl+F)" aria-label="Find in this PDF"><svg class="i s"><use href="#i-search"/></svg></button>
@@ -559,7 +558,6 @@ svg.i.s{width:16px;height:16px}
       <div id="scroller">
         <div id="pages"></div>
         <div id="readerEmpty">
-          <img class="em-logo" src="favicon.svg" alt="Sift" width="72" height="72">
           <h1>Read, highlight, sort.</h1>
           <p>Every highlight lands on the board, ready for you to arrange.</p>
           <div class="em-actions">
@@ -993,7 +991,7 @@ function closeDoc() {
   if (S.pdf) { try { S.pdf.destroy(); } catch (e) {} }
   S.pdf = null; S.doc = null; io && io.disconnect(); rendered.clear();
   pagesEl.textContent = ''; $('#readerEmpty').hidden = false;
-  $('#docTitle').value = 'Sift'; $('#docTitle').readOnly = true; $('#pageTotal').textContent = '/ 0'; $('#pageIn').value = '';
+  $('#docTitle').value = ''; $('#docTitle').readOnly = true; $('#pageTotal').textContent = '/ 0'; $('#pageIn').value = '';
   $('#pager').hidden = true; $('#zoomSeg').hidden = true; $('#findBtn').hidden = true; $('#tocBtn').hidden = true;
   closeFind(); FIND.texts = new Map();
   LS.set('doc', null);
